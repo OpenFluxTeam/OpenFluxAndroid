@@ -20,18 +20,21 @@ import io.openflux.desktop.model.AppSettings
 import io.openflux.desktop.model.CaptchaPrompt
 import io.openflux.desktop.model.ConnectionMode
 import io.openflux.desktop.model.ConnectionState
+import io.openflux.desktop.model.CoreConfig
 import io.openflux.desktop.model.ExitAddress
 import io.openflux.desktop.model.LogLevel
 import io.openflux.desktop.model.LogLine
 import io.openflux.desktop.model.NetworkKind
 import io.openflux.desktop.model.Profile
 import io.openflux.desktop.model.TrafficStats
+import io.openflux.desktop.model.TransportType
 import io.openflux.desktop.model.YandexDisk
 import io.openflux.desktop.service.ConnectionService
 import io.openflux.desktop.service.SettingsRepository
 import io.openflux.desktop.ui.BrowserPage
 import io.openflux.desktop.ui.Format
 import io.openflux.desktop.ui.look
+import org.json.JSONObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -66,6 +69,8 @@ class AndroidConnectionService(
     private val settings: SettingsRepository,
     private val bridge: ActivityBridge,
     private val accounts: Accounts,
+    /** Installed script transports, to resolve a SCRIPT carrier's file + pinned key. */
+    private val scripts: AndroidScriptRepository? = null,
 ) : ConnectionService {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     /** connect/disconnect/failures one at a time. */
@@ -183,6 +188,10 @@ class AndroidConnectionService(
         clearCaptcha()
         profile.problems().firstOrNull()?.let {
             fail(profile, it)
+            return
+        }
+        if (profile.stream && current.mode == ConnectionMode.Exit) {
+            fail(profile, "Режим без сервера работает только как клиент: выхода в нём нет, сервер заменяет PHP-хостинг")
             return
         }
         val kind = when {
@@ -364,10 +373,22 @@ class AndroidConnectionService(
     private fun startCarrier(current: Run): String {
         val profile = current.profile
         val secret = profile.secret
+        // A script carrier runs the JS engine, an experimental feature that is off until the user turns it on.
+        if (!current.settings.experimental && profile.carriers.any { it.type == TransportType.SCRIPT }) return CoreConfig.SCRIPTS_OFF
         Mobile.setDebugLevel(current.settings.debugLevel.toLong())
         Mobile.setNetworkBinder(current.networks)
+        // The mode without a server: a PHP node on a web hosting, over cups.online or a Mail.ru document.
+        if (profile.stream) {
+            val type = profile.transport.cliName
+            val url = profile.value.trim()
+            return when (current.kind) {
+                Kind.Vpn -> Mobile.startStreamPacket(type, url)
+                Kind.Proxy -> Mobile.startStreamProxy(type, url, proxyAddress(current.settings), "", "", "")
+                Kind.Exit -> "Режим без сервера работает только как клиент"
+            }.orEmpty()
+        }
         return if (profile.session) {
-            val specs = CoreSpecs.session(profile, exit = current.kind == Kind.Exit, directPort = current.settings.exitDirectPort)
+            val specs = CoreSpecs.session(profile, exit = current.kind == Kind.Exit, directPort = current.settings.exitDirectPort) { id -> scripts?.carrier(id) }
             when (current.kind) {
                 Kind.Vpn -> Mobile.startSession(specs, secret)
                 Kind.Proxy -> Mobile.startSessionProxy(specs, secret, proxyAddress(current.settings), "", "", "")
@@ -479,7 +500,12 @@ class AndroidConnectionService(
                 val upSpeed = if (lastAt == 0L) 0 else ((totalUp - lastUp) / seconds).toLong().coerceAtLeast(0)
                 val downSpeed = if (lastAt == 0L) 0 else ((totalDown - lastDown) / seconds).toLong().coerceAtLeast(0)
                 lastUp = totalUp; lastDown = totalDown; lastAt = now
-                _traffic.value = TrafficStats(upSpeed, downSpeed, totalUp, totalDown, Mobile.currentTransport().orEmpty(), live = true)
+                _traffic.value = TrafficStats(
+                    upSpeed, downSpeed, totalUp, totalDown,
+                    activeTransport = Mobile.currentTransport().orEmpty(),
+                    activeTransports = Mobile.currentTransports().orEmpty().split(',').filter(String::isNotEmpty),
+                    live = true,
+                )
                 // A VPN counts as connected once its interface is up.
                 if (current.kind != Kind.Vpn || current.tunnel != null) {
                     if (up) markConnected(current) else markReconnecting(current)
@@ -524,7 +550,9 @@ class AndroidConnectionService(
     private fun notificationText(current: Run): String {
         val look = _state.value.look().title
         val traffic = _traffic.value
-        val via = traffic.activeTransport.takeIf { it.isNotEmpty() }?.let { " · $it" }.orEmpty()
+        // Which carriers: "Volga + Мой транспорт", a script by its own name (the core only calls it "script").
+        val names = traffic.activeCarriers
+        val via = if (names.isEmpty()) "" else " · " + current.profile.carrierLabels(names, scripts?.scripts?.value.orEmpty())
         return when (_state.value) {
             is ConnectionState.Connected -> "$look · ↓ ${Format.speed(traffic.downBytesPerSec)}  ↑ ${Format.speed(traffic.upBytesPerSec)}$via"
             else -> if (current.notice.isNotEmpty()) "$look · ${current.notice}" else look
@@ -536,8 +564,25 @@ class AndroidConnectionService(
     override fun refreshExitAddress() {
         val checked = run ?: return
         if (checked.kind == Kind.Exit) return
-        // OpenFlux stays outside its own VPN, so without a proxy of its own it
-        // cannot ask ipify through the tunnel; only a browser the user opens can.
+        // OpenFlux stays outside its own VPN, so it cannot ask ipify through the tunnel.
+        // The stream VPN has a way out all the same: a stream beside the device's packets.
+        if (checked.kind == Kind.Vpn && checked.profile.stream) {
+            _exitAddress.value = ExitAddress.Checking
+            scope.launch {
+                val result = runCatching {
+                    val ip = Mobile.streamExitIP()
+                    when {
+                        ip.isEmpty() -> ExitAddress.Unavailable("нода ещё не отвечает")
+                        ip.startsWith("error:") -> ExitAddress.Unavailable(ip.removePrefix("error:").trim())
+                        IP.matches(ip) -> ExitAddress.Known(ip)
+                        else -> ExitAddress.Unavailable("неожиданный ответ")
+                    }
+                }.getOrElse { ExitAddress.Unavailable(it.message ?: "нет ответа") }
+                if (run === checked) _exitAddress.value = result
+            }
+            return
+        }
+        // Any other VPN/exit mode: only a browser the user opens can reach ipify.
         if (checked.kind != Kind.Proxy) {
             if (run === checked) _exitAddress.value = ExitAddress.NotCheckable("в режиме VPN видно в браузере: api.ipify.org")
             return
@@ -557,24 +602,38 @@ class AndroidConnectionService(
         }
     }
 
-    // ---- Yandex checks ----
+    // ---- Yandex checks / script setup pages ----
 
-    /** Shows a check the core just asked for; forgets one it no longer waits on. */
+    /** Shows a check (or a script's own setup page) the core just asked for; forgets one it no longer waits on. */
     private fun checkCaptcha() {
         val url = Mobile.pendingCaptchaURL().orEmpty()
-        if (url.isEmpty()) {
+        val html = Mobile.pendingCaptchaHTML().orEmpty()
+        // The core says which pages are the script's own (inline html or its own loopback server).
+        val own = Mobile.pendingCaptchaOwn() || html.isNotEmpty()
+        if (url.isEmpty() && html.isEmpty()) {
             if (captchaUrl != null && _captcha.value?.busy != true) clearCaptcha()
             return
         }
-        if (url == captchaUrl) return
-        captchaUrl = url
+        val identity = url.ifEmpty { html }
+        if (identity == captchaUrl) return
+        captchaUrl = identity
         captchaSolved = false
         val proxy = Mobile.pendingCaptchaProxy().orEmpty()
         val reason = Mobile.pendingCaptchaReason().orEmpty()
         val remote = proxy.isNotEmpty()
-        log(LogLevel.Warning, if (remote) "Нода просит пройти проверку Яндекса" else "Яндекс просит пройти проверку")
-        _captcha.value = CaptchaPrompt(url, reason, remote)
-        openPage(url, proxy)
+        log(
+            LogLevel.Warning,
+            when {
+                own -> "Транспорт просит настройку"
+                remote -> "Нода просит пройти проверку Яндекса"
+                else -> "Яндекс просит пройти проверку"
+            },
+        )
+        _captcha.value = CaptchaPrompt(
+            url, reason, remote,
+            html = html.ifEmpty { null }, own = own, transport = Mobile.pendingCaptchaTransport().orEmpty(),
+        )
+        openPage(url, proxy, html, own)
         if (!context.openFlux.visible) CoreService.notifyCaptcha(context, remote, login = reason == "login")
     }
 
@@ -587,14 +646,20 @@ class AndroidConnectionService(
 
     override fun openCaptcha() {
         val prompt = _captcha.value ?: return
-        openPage(prompt.url, Mobile.pendingCaptchaProxy().orEmpty())
+        openPage(prompt.url, Mobile.pendingCaptchaProxy().orEmpty(), prompt.html.orEmpty(), prompt.own)
     }
 
-    private fun openPage(url: String, proxy: String) {
+    private fun openPage(url: String, proxy: String, html: String = "", own: Boolean = html.isNotEmpty()) {
         (_captchaPage.value as? WebPage)?.close()
-        val page = WebPage(url, proxy)
+        val page = when {
+            html.isNotEmpty() -> WebPage(html = html, onSubmit = ::onSetupSubmission)
+            // The script's own server: loopback, never through the exit's proxy.
+            own -> WebPage(url, own = true, onSubmit = ::onSetupSubmission)
+            else -> WebPage(url, proxy)
+        }
         _captchaPage.value = page
         _captcha.update { it?.copy(error = "", progress = "") }
+        if (own) return // the page submits itself; no cookie/settle detection applies.
         // A real browser is often let through without any check (it targets the
         // core's bot-like client): a regular page that stays put counts as passed.
         scope.launch {
@@ -611,6 +676,28 @@ class AndroidConnectionService(
                 }
                 delay(300)
             }
+        }
+    }
+
+    /**
+     * window.openfluxSubmit(payload) from a script's own setup page (WebPage's
+     * Submit bridge). The core reads the payload (script.FlattenSubmission:
+     * flat or {client: {...}}, values as strings) and hands it to the script;
+     * node-scoped delivery during a node deploy is a separate, not yet wired, path.
+     */
+    private fun onSetupSubmission(json: String) {
+        if (_captcha.value?.busy == true) return
+        _captcha.update { it?.copy(busy = true, error = "") }
+        scope.launch {
+            captchaSolved = true
+            val error = Mobile.submitCaptchaData(json).orEmpty()
+            if (error.isNotEmpty()) {
+                captchaSolved = false
+                _captcha.update { it?.copy(busy = false, error = error) }
+                return@launch
+            }
+            log(LogLevel.Success, "Настройка передана транспорту")
+            clearCaptcha()
         }
     }
 

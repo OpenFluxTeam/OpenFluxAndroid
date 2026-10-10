@@ -9,15 +9,24 @@ import io.openflux.desktop.data.FileAccountRepository
 import io.openflux.android.web.WebViewAccountBrowser
 import android.app.Application
 import android.content.Context
+import android.util.Log
+import io.openflux.bridge.mobile.Mobile
 import io.openflux.android.core.AndroidConnectionService
+import io.openflux.android.core.AndroidScriptRepository
 import io.openflux.android.core.MobileCoreLinks
 import io.openflux.android.node.AndroidNodeWizard
+import io.openflux.android.node.AndroidPhpTransport
 import io.openflux.android.platform.AndroidPlatformServices
 import io.openflux.desktop.data.FileProfileRepository
 import io.openflux.desktop.data.FileSettingsRepository
 import io.openflux.desktop.model.AppSettings
 import io.openflux.desktop.model.CoreShareLinkCodec
 import io.openflux.desktop.service.AppContainer
+import io.openflux.desktop.service.NodeKeepingConnection
+import io.openflux.desktop.service.PhpHostingService
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * Holds what the UI and the core service share for the life of the process:
@@ -45,16 +54,40 @@ class OpenFluxApplication : Application() {
             now = System::currentTimeMillis,
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         )
-        connection = AndroidConnectionService(this, settings, bridge, accounts)
+        val scripts = AndroidScriptRepository(this)
+        connection = AndroidConnectionService(this, settings, bridge, accounts, scripts)
+        val phpHosting = PhpHostingService(AndroidPhpTransport(), clock = System::currentTimeMillis)
         container = AppContainer(
             profiles = FileProfileRepository(filesDir),
             settings = settings,
-            connection = connection,
+            scripts = scripts,
+            // Connecting a profile made by the "без сервера" wizard first asks its node on the hosting to run.
+            connection = NodeKeepingConnection(connection, phpHosting, CoroutineScope(SupervisorJob() + Dispatchers.Default)),
             platform = AndroidPlatformServices(this, bridge),
             shareCodec = CoreShareLinkCodec(MobileCoreLinks),
             nodeWizard = AndroidNodeWizard(accounts),
             accounts = accounts,
+            phpHosting = phpHosting,
+            settingsPageHost = io.openflux.android.web.AndroidSettingsPageHost,
         )
+
+        // The JS (goja) script-transport engine is an experimental feature: nothing of it runs
+        // until the user turns "Экспериментальные функции" on. Then the scripts shipped in the
+        // APK are installed (or upgraded) and the engine is proved to run in-process once; the
+        // result lands in logcat under the tag "OpenFluxJS".
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            settings.settings.map { it.experimental }.distinctUntilChanged().collect { on ->
+                if (!on) return@collect
+                scripts.syncBundled()
+                try {
+                    val available = Mobile.scriptEngineAvailable()
+                    val result = Mobile.scriptEngineSelfTest(cacheDir.absolutePath)
+                    Log.i("OpenFluxJS", "engine available=$available selftest=$result")
+                } catch (t: Throwable) {
+                    Log.e("OpenFluxJS", "engine self-test failed", t)
+                }
+            }
+        }
     }
 }
 

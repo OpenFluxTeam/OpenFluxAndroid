@@ -44,6 +44,59 @@ class AndroidPlatformServices(
     override val appVersion: String = BuildConfig.VERSION_NAME
     override val coreVersion: String = BuildConfig.CORE_VERSION
     override val clientRepo: String = RELEASE_REPO
+
+    override val officialScriptKey: String get() = io.openflux.bridge.mobile.Mobile.officialScriptKey()
+
+    override fun inspectTransport(data: ByteArray, sig: ByteArray, pubkeyHex: String): String =
+        io.openflux.bridge.mobile.Mobile.inspectTransport(data, sig, pubkeyHex)
+
+    override fun scriptSettings(data: ByteArray, sig: ByteArray, pubkeyHex: String, valuesJson: String, lang: String): String =
+        io.openflux.bridge.mobile.Mobile.scriptSettings(data, sig, pubkeyHex, valuesJson, lang)
+
+    override fun checkScriptUpdate(installedJson: String, channel: String): String =
+        io.openflux.bridge.mobile.Mobile.checkScriptUpdate(installedJson, channel)
+
+    override fun applyScriptUpdate(installedJson: String, channel: String, dir: String, allowWireBreak: Boolean): String =
+        io.openflux.bridge.mobile.Mobile.applyScriptUpdate(installedJson, channel, dir, allowWireBreak)
+
+    override fun rollbackScript(installedJson: String, dir: String): String =
+        io.openflux.bridge.mobile.Mobile.rollbackScript(installedJson, dir)
+
+    override fun scriptFingerprint(pubkeyHex: String): String =
+        io.openflux.bridge.mobile.Mobile.scriptFingerprint(pubkeyHex)
+
+    override suspend fun fetchBytes(url: String): ByteArray? = withContext(Dispatchers.IO) {
+        runCatching {
+            val c = URL(url).openConnection() as HttpURLConnection
+            c.connectTimeout = 10000
+            c.readTimeout = 15000
+            c.instanceFollowRedirects = true
+            c.setRequestProperty("User-Agent", "OpenFlux-Android")
+            // A transport package is a few KB; an answer past the cap is not one.
+            if (c.responseCode !in 200..299) return@runCatching null
+            c.inputStream.use { body ->
+                val out = java.io.ByteArrayOutputStream()
+                val buf = ByteArray(8192)
+                while (true) {
+                    val n = body.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    if (out.size() > MAX_FETCH_BYTES) return@runCatching null
+                }
+                out.toByteArray()
+            }
+        }.getOrNull()
+    }
+
+    override suspend fun readBytes(pathOrUri: String): ByteArray? = withContext(Dispatchers.IO) {
+        runCatching {
+            if (pathOrUri.startsWith("content://")) {
+                context.contentResolver.openInputStream(Uri.parse(pathOrUri))?.use { it.readBytes() }
+            } else {
+                java.io.File(pathOrUri).readBytes()
+            }
+        }.getOrNull()
+    }
     override val systemProxySupported = false
     /** The VPN: the whole phone through the node. */
     override val fullTunnelSupported = true
@@ -106,18 +159,27 @@ class AndroidPlatformServices(
     override suspend fun newCupsRooms(): String = CupsRooms.create()
 
     override suspend fun latestRelease(): String? = withContext(Dispatchers.IO) {
-        runCatching {
-            val connection = URL("https://api.github.com/repos/$RELEASE_REPO/releases?per_page=20").openConnection() as HttpURLConnection
-            connection.connectTimeout = 8000
-            connection.readTimeout = 10000
-            connection.setRequestProperty("User-Agent", "OpenFlux-Android")
-            val body = connection.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
-            Json.parseToJsonElement(body).jsonArray
-                .map { it.jsonObject["tag_name"]?.jsonPrimitive?.content.orEmpty() }
-                .firstOrNull { it.startsWith(TAG_PREFIX) }
-                ?.removePrefix(TAG_PREFIX)
-        }.getOrNull()
+        releaseTags().firstOrNull { it.startsWith(TAG_PREFIX) }?.removePrefix(TAG_PREFIX)
     }
+
+    /** The newest release of either channel; GitHub lists them newest first. */
+    override suspend fun latestNightly(): String? = withContext(Dispatchers.IO) {
+        releaseTags().firstOrNull { it.startsWith(TAG_PREFIX) || it.startsWith(NIGHTLY_PREFIX) }
+            ?.removePrefix(TAG_PREFIX)
+    }
+
+    /** Tags of the published (non-draft) releases, newest first; empty when offline. */
+    private fun releaseTags(): List<String> = runCatching {
+        val connection = URL("https://api.github.com/repos/$RELEASE_REPO/releases?per_page=30").openConnection() as HttpURLConnection
+        connection.connectTimeout = 8000
+        connection.readTimeout = 10000
+        connection.setRequestProperty("User-Agent", "OpenFlux-Android")
+        val body = connection.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+        Json.parseToJsonElement(body).jsonArray
+            .map { it.jsonObject }
+            .filter { it["draft"]?.jsonPrimitive?.content != "true" }
+            .map { it["tag_name"]?.jsonPrimitive?.content.orEmpty() }
+    }.getOrDefault(emptyList())
 
     /** The picked image, scaled down so a camera photo does not exhaust memory. */
     private fun loadBitmap(uri: Uri): Bitmap? {
@@ -144,8 +206,11 @@ class AndroidPlatformServices(
     }
 
     private companion object {
+        const val MAX_FETCH_BYTES = 4 * 1024 * 1024
         const val RELEASE_REPO = "meepo161/OpenFluxAndroid"
         const val TAG_PREFIX = "v"
+        /** Nightly test builds are tagged nightly-<date>-<commit>, as prereleases. */
+        const val NIGHTLY_PREFIX = "nightly-"
         const val MAX_QR_IMAGE = 2048
         val IMAGE_EXTENSIONS = setOf("png", "jpg", "jpeg", "bmp", "gif", "webp")
     }

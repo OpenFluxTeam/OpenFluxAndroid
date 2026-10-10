@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
+import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import io.openflux.desktop.model.SetupPages
 import io.openflux.desktop.ui.BrowserPage
 import io.openflux.desktop.ui.BrowserViews
 import kotlinx.coroutines.CompletableDeferred
@@ -30,14 +32,34 @@ import java.util.concurrent.atomic.AtomicLong
  * [close], so hiding the dialog does not lose the page. [proxy] ("host:port")
  * sends it through the tunnel, for a check the exit node must pass from its
  * own address.
+ *
+ * A script transport's own page comes two ways: [html], instead of
+ * [startUrl], is its inline page; with [own] the [startUrl] is on the script's
+ * own loopback server (http://127.0.0.1:port, httpserver.listen() in the
+ * core). Either submits itself through [onSubmit] (window.openfluxSubmit)
+ * rather than through cookies. The submit channel belongs to the page's own
+ * address: once the WebView is anywhere else (a link out of the page) what it
+ * sends is dropped.
  */
 class WebPage(
-    private val startUrl: String,
+    private val startUrl: String = "",
     private val proxy: String = "",
     private val scripts: Boolean = false,
     /** null keeps WebView's own; Yandex pages get the core's (see [USER_AGENT]). */
     private val userAgent: String? = USER_AGENT,
+    private val html: String? = null,
+    private val onSubmit: ((String) -> Unit)? = null,
+    private val own: Boolean = false,
 ) : BrowserPage {
+    /** The address an own-server page's frame must keep for the bridge to stay with it; null otherwise. */
+    private val ownOrigin: String? = if (own) SetupPages.loopbackOrigin(startUrl) else null
+
+    init {
+        require(!own || ownOrigin != null) { "Страница настройки скрипта открывается только с адреса 127.0.0.1 его собственного сервера" }
+    }
+
+    private val setupPage: Boolean get() = html != null || own
+
     @Volatile var url: String = startUrl
         private set
     @Volatile var loading = true
@@ -80,6 +102,13 @@ class WebPage(
             setAcceptThirdPartyCookies(web, true)
         }
         if (scripts) web.addJavascriptInterface(Results(), BRIDGE)
+        if (setupPage) web.addJavascriptInterface(Submit(), SUBMIT_BRIDGE)
+        // An own-server page cannot be edited on the way: the bridge goes in before its scripts where the
+        // WebView can do that, and again when it has loaded where it cannot (idempotent).
+        val origin = ownOrigin
+        if (origin != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            runCatching { WebViewCompat.addDocumentStartJavaScript(web, SUBMIT_BRIDGE_JS, setOf(origin.trimEnd('/'))) }
+        }
         web.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 this@WebPage.url = url
@@ -93,10 +122,15 @@ class WebPage(
             override fun onPageFinished(view: WebView, url: String) {
                 this@WebPage.url = url
                 loading = false
+                if (setupPage && bridgeAllowedAt(url)) view.evaluateJavascript(SUBMIT_BRIDGE_JS, null)
             }
         }
         view = web
-        if (proxy.isEmpty()) {
+        if (html != null) {
+            // Never through the tunnel's proxy: a script's own page is loopback-only,
+            // like httpserver.listen() on the core side it usually talks to.
+            web.loadDataWithBaseURL(null, SetupPages.inject(html, SUBMIT_BRIDGE_JS), "text/html", "utf-8", null)
+        } else if (proxy.isEmpty()) {
             web.loadUrl(startUrl)
         } else if (WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) {
             proxyOverridden = true
@@ -167,9 +201,27 @@ class WebPage(
         }
     }
 
+    /** Whether [at] is the page's own address: an inline page has none (about:blank), a server page keeps its origin. */
+    private fun bridgeAllowedAt(at: String): Boolean = when {
+        html != null -> at.isBlank() || at.startsWith("about:") || at.startsWith("data:")
+        ownOrigin != null -> at.startsWith(ownOrigin, ignoreCase = true)
+        else -> false
+    }
+
+    private inner class Submit {
+        @JavascriptInterface
+        fun submit(json: String) {
+            // @JavascriptInterface calls come from a WebView thread; url is volatile.
+            if (!bridgeAllowedAt(this@WebPage.url)) return
+            onSubmit?.invoke(json)
+        }
+    }
+
     companion object {
         const val USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:153.0) Gecko/20100101 Firefox/153.0"
         private const val BRIDGE = "OpenFluxBridge"
+        private const val SUBMIT_BRIDGE = "OpenFluxSubmit"
+        private val SUBMIT_BRIDGE_JS = SetupPages.bridgeScript("window.$SUBMIT_BRIDGE.submit(j)")
 
         /** Every cookie of the built-in browser, the Yandex sign-in among them. */
         fun clearCookies() {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext is refused everywhere except the phone's own loopback: a script
+  transport's setup page can be served by the script itself (httpserver.listen()
+  in the core, http://127.0.0.1:port) and shown in a WebView. Nothing leaves the
+  device on that address. The debug build has its own copy (androidApp/src/debug).
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
