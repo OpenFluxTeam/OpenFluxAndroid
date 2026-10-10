@@ -4,6 +4,7 @@ import io.openflux.desktop.service.Accounts
 import io.openflux.desktop.service.AccountException
 import io.openflux.android.web.WebPage
 import io.openflux.bridge.mobile.Mobile
+import io.openflux.desktop.model.InstalledChannel
 import io.openflux.desktop.model.LogLevel
 import io.openflux.desktop.model.LogLine
 import io.openflux.desktop.model.NewChannel
@@ -93,6 +94,31 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
     override suspend fun remove(channel: String, sudoPassword: String) {
         call("nodeRemove", "channel=$channel") { Mobile.nodeRemove(channel, sudoPassword) }
     }
+
+    override suspend fun showChannel(channel: String, sudoPassword: String): InstalledChannel {
+        val reply = call("nodeShowChannel", "channel=$channel") { Mobile.nodeShowChannel(channel, sudoPassword) }
+        return json.decodeFromJsonElement(InstalledChannel.serializer(), reply.getValue("channel"))
+    }
+
+    override suspend fun setTransports(channel: String, transports: List<NodeTransport>, sudoPassword: String, cookieHeader: String): InstalledChannel {
+        val reply = call("nodeSetTransports", "channel=$channel ${transports.names()}") {
+            Mobile.nodeSetTransports(channel, transports.json(), cookieHeader, sudoPassword)
+        }
+        return json.decodeFromJsonElement(InstalledChannel.serializer(), reply.getValue("channel"))
+    }
+
+    override suspend fun channelShareLink(name: String, key: String, host: String, port: Int, transports: List<NodeTransport>, context: String): String =
+        withContext(Dispatchers.IO) {
+            log(LogLevel.Debug, "мастер: → nodeShareLinkContext $host:$port ${transports.names()}")
+            try {
+                Mobile.nodeShareLinkContext(name, transports.json(), key, host, port.toLong(), context).also {
+                    log(LogLevel.Debug, "мастер: ← nodeShareLinkContext $host:$port ok")
+                }
+            } catch (e: Exception) {
+                log(LogLevel.Error, "мастер: ← nodeShareLinkContext $host:$port ошибка: ${e.message}")
+                throw NodeWizardException(e.message ?: "Не удалось собрать ссылку канала")
+            }
+        }
 
     override suspend fun checkDocument(documentUrl: String) {
         call("nodeCheckDocument") { Mobile.nodeCheckDocument(documentUrl) }
