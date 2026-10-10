@@ -5,6 +5,13 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [2.12.1] - 2026-10-11 (meepo161/OpenFluxAndroid)
+
+### Fixed
+
+- Account: the device list no longer says this device was last seen minutes
+  ago; it is shown as "сейчас на связи".
+
 ## [2.12.0] - 2026-10-11 (meepo161/OpenFluxAndroid)
 
 ### Added
