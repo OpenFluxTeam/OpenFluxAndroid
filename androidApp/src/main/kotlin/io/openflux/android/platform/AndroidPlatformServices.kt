@@ -42,6 +42,10 @@ class AndroidPlatformServices(
 
     override val kind = PlatformKind.Android
     override val appVersion: String = BuildConfig.VERSION_NAME
+    override val utcOffsetSeconds: Int get() = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 1000
+    override val deviceName: String
+        get() = listOf(android.os.Build.MANUFACTURER, android.os.Build.MODEL).filter { it.isNotBlank() }.joinToString(" ")
+            .replaceFirstChar { it.uppercase() }.ifBlank { "Телефон" }
     override val coreVersion: String = BuildConfig.CORE_VERSION
     override val clientRepo: String = RELEASE_REPO
 
@@ -157,6 +161,25 @@ class AndroidPlatformServices(
     override fun now(): Long = System.currentTimeMillis()
 
     override suspend fun newCupsRooms(): String = CupsRooms.create()
+
+    // --- The app's own updates ---
+
+    override val updateInstallSupported: Boolean get() = true
+
+    override suspend fun httpText(url: String): String = io.openflux.desktop.data.UpdateDownloads.text(url)
+
+    override fun updateAsset(assets: List<io.openflux.desktop.model.AppAsset>) =
+        AndroidUpdate.pick(assets, android.os.Build.SUPPORTED_ABIS.toList())
+
+    override suspend fun downloadUpdate(asset: io.openflux.desktop.model.AppAsset, sha256: String, onProgress: (Long, Long) -> Unit): String {
+        val dir = java.io.File(context.cacheDir, "updates")
+        // The APK of an earlier update is of no use any more.
+        dir.listFiles()?.filter { it.name != asset.name }?.forEach { it.delete() }
+        return io.openflux.desktop.data.UpdateDownloads.file(asset.url, dir, asset.name, sha256, onProgress).absolutePath
+    }
+
+    override suspend fun installUpdate(path: String): io.openflux.desktop.model.InstallResult =
+        withContext(Dispatchers.IO) { AndroidUpdate.install(context, path) }
 
     override suspend fun latestRelease(): String? = withContext(Dispatchers.IO) {
         releaseTags().firstOrNull { it.startsWith(TAG_PREFIX) }?.removePrefix(TAG_PREFIX)

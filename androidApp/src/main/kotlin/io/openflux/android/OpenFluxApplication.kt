@@ -68,8 +68,12 @@ class OpenFluxApplication : Application() {
             nodeWizard = AndroidNodeWizard(accounts),
             accounts = accounts,
             phpHosting = phpHosting,
+            subscriptionApi = io.openflux.desktop.data.HttpSubscriptionApi(),
+            subscriptionRepo = io.openflux.desktop.data.FileSubscriptionRepository(noBackupFilesDir),
             settingsPageHost = io.openflux.android.web.AndroidSettingsPageHost,
         )
+        // The subscription's list of locations is refreshed in the background.
+        container.subscription.start(CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
         // The JS (goja) script-transport engine is an experimental feature: nothing of it runs
         // until the user turns "Экспериментальные функции" on. Then the scripts shipped in the

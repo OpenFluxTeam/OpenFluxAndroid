@@ -5,6 +5,55 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-10-11 (meepo161/OpenFluxAndroid)
+
+### Added
+
+- Accounts and subscriptions. People who run no node of their own sign in and
+  press "Подключить": the owner's service (`opensub`, core 0.6.0,
+  docs/subscriptions.ru.md) gives them locations built from the owner's nodes,
+  without documents, keys or SSH. Account with a login and password (no
+  email), a recovery key shown once, a trial, a plan chosen in the app and paid
+  by the owner's own means (the owner confirms the order and the app notices
+  it by itself), devices per plan, password change, sign-out, account deletion.
+  A subscription key (`openflux://sub?…`, from a link, QR, file or the paste
+  field) works without an account. The service is pinned by its certificate's
+  SHA-256 carried in the key.
+- "Подключение" (the Подписка tab before signing in), after Amnezia's screen:
+  one paste field for a key or link, and the other ways to connect under it
+  (an account, a node on your own server, a file, a QR code, a node without a
+  server, by hand, restore access). Home shows the same two buttons until there
+  is a connection, and a strip with the subscription's end date after.
+- Change a node from its profile: "Изменить транспорты на сервере…" in the
+  profile's details and in its settings opens the node wizard on that
+  profile's channel (found on the server by its port); only the server's
+  password is asked. The key, port and links stay, the profile is updated.
+- The app updates itself from its GitHub releases: a few seconds after the
+  start and every six hours it looks for a newer release (switch in
+  Settings → О программе) and offers it in a banner with "Обновить",
+  "Пропустить" and "Позже". Nothing is downloaded before the tap; the
+  installer is checked against the release's `SHA256SUMS.txt` and refused
+  without a matching sum; only GitHub's hosts over https are used.
+- Android installs through the system installer (the person confirms; "Install
+  unknown apps" is allowed for OpenFlux first), picks the APK of the phone's
+  CPU, and reports why when the system refuses (a different signing key,
+  cancelled, no space).
+
+### Changed
+
+- "Логи" is no longer a tab: the journal opens from Settings → Интерфейс and
+  from Home ("Журнал"). Fewer tabs, the same screen.
+- "Позже" on a Yandex check now keeps further Yandex checks quiet for ten
+  minutes (the other transports carry on) instead of asking again at once.
+- Forms clear their error as soon as a field is edited; the recovery key is
+  shown four groups to a line.
+- The tab bar hides while the keyboard is up.
+
+### Removed
+
+- The "Ночные сборки" switch and the link to a stale Android repository in
+  About: this fork publishes one channel.
+
 ## [2.11.1] - 2026-10-10 (meepo161/OpenFluxAndroid)
 
 ### Fixed

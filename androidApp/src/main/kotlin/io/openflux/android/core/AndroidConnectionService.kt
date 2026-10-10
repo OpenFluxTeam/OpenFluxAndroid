@@ -122,6 +122,8 @@ class AndroidConnectionService(
     /** The core's pending check shown now, and how the user left it. */
     @Volatile private var captchaUrl: String? = null
     @Volatile private var captchaSolved = false
+    /** "Позже": checks for a Yandex page stay quiet until then (the other transports carry on); a new connection resets it. */
+    @Volatile private var captchaSnoozedUntil = 0L
 
     private val cookieStore get() = File(context.filesDir, "transport-cookies.json")
 
@@ -168,6 +170,7 @@ class AndroidConnectionService(
     // ---- connect / disconnect ----
 
     override fun connect(profile: Profile, mode: ConnectionMode?) {
+        captchaSnoozedUntil = 0
         scope.launch {
             lifecycle.withLock {
                 run?.let { stop(it, restart = true) }
@@ -616,6 +619,11 @@ class AndroidConnectionService(
         }
         val identity = url.ifEmpty { html }
         if (identity == captchaUrl) return
+        // A script's own setup page was asked for by the person; only a Yandex check is snoozed.
+        if (!own && System.currentTimeMillis() < captchaSnoozedUntil) {
+            Mobile.cancelCaptcha()
+            return
+        }
         captchaUrl = identity
         captchaSolved = false
         val proxy = Mobile.pendingCaptchaProxy().orEmpty()
@@ -728,6 +736,7 @@ class AndroidConnectionService(
     }
 
     override fun dismissCaptcha() {
+        if (_captcha.value?.own == false) captchaSnoozedUntil = System.currentTimeMillis() + CAPTCHA_SNOOZE_MS
         captchaSolved = false
         Mobile.cancelCaptcha()
         clearCaptcha()
@@ -803,6 +812,7 @@ class AndroidConnectionService(
         private const val NETWORK_WAIT_MS = 5_000L
         private const val SETTLE_MS = 1500L
         private const val MAX_LOG_LINES = 5000
+        private const val CAPTCHA_SNOOZE_MS = 10 * 60_000L
         private val IP = Regex("""^[0-9a-fA-F:.]{3,45}$""")
         /** Lines the app's side of the core writes; the rest is the transports' debug log. */
         private val APP_TAGS = listOf("[ANDROID]", "[NODE]", "[ERROR]", "[SUCCESS]", "[WARN")

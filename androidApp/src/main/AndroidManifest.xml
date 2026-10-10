@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- The QR scanner (zxing-android-embedded) asks for it when opened. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Installing an update of this app that was downloaded from its GitHub releases (the person confirms each one). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
@@ -43,6 +45,9 @@
                 <data android:scheme="openflux" />
             </intent-filter>
         </activity>
+
+        <!-- The system installer's answer while updating the app. -->
+        <receiver android:name=".platform.UpdateInstallReceiver" android:exported="false" />
 
         <!-- The library's scanner is landscape-only by default. -->
         <activity
