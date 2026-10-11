@@ -5,6 +5,46 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-10-11 (meepo161/OpenFluxAndroid)
+
+### Changed
+
+- The whole navigation is rebuilt around four places, each with its own stack of
+  screens: **Главная** (connect), **Подключения** (everything one connects with:
+  the OpenFlux account, keys, links, profiles), **Ноды** (what one runs: the
+  nodes on one's own servers or hosting), **Настройки**. Profiles, making a node
+  and changing a node are separate scenarios with their own screens:
+  a profile's screen and its fields editor under Подключения; the list of one's
+  nodes, a node's screen, "Изменить на сервере" and the wizards under Ноды.
+  A screen opens on top of the place the person is in, so "back" returns to
+  where they came from ("← Подключения", "← Нода Амстердам"); a tap on a place's
+  tab shows where they left it, a second tap its first screen. In a wide window
+  the list stays at the left and a profile or node opens beside it. The
+  Подписка tab is gone: the account, its sign-in and the ways to connect live
+  under Подключения ("Добавить"). See the README's "Navigation".
+- A node is changed on one screen: its profile, the way into its server and the
+  transports of its channel, with "Применить на сервере" always in reach; no
+  more steps. "Это моя нода" marks an imported profile as one's own to manage.
+- Sign-ins to Yandex and Mail.ru are a normal page of Settings (not hidden behind
+  developer mode): sign in once and the transports get the session (fewer Yandex
+  checks) and one's own node gets it when its session ends. The Yandex check's
+  dialog offers it, and "Позже" keeps further checks quiet for ten minutes;
+  on Android a postponed check no longer fails a connection the other
+  transports can still bring up.
+- Home shows the subscription as a strip without a badge on a phone; the
+  account opened from Home goes back to Home.
+
+### Added
+
+- Node mode, **L4 or L3**, is chosen when a node is made and changed on an
+  installed node (core 0.7.0): l4 (default) needs nothing; l3 passes IP packets
+  and asks the server for iptables and systemd 231+, said before installing.
+  Only this fork's installer takes it.
+- Android: the quick-settings tile "OpenFlux" connects the selected profile or
+  disconnects from the status bar's panel and shows the profile and state; the
+  first time (or with no profile) it opens the app, which asks for the VPN
+  permission.
+
 ## [2.12.1] - 2026-10-11 (meepo161/OpenFluxAndroid)
 
 ### Fixed

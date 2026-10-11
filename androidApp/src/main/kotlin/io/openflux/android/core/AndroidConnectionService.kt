@@ -414,13 +414,19 @@ class AndroidConnectionService(
         while (!current.stopping && !Mobile.isConnected()) {
             // Only the phone's own checks hold connecting up; the node's are
             // passed once the tunnel runs.
-            if (Mobile.pendingCaptchaURL().isNotEmpty() && Mobile.pendingCaptchaProxy().isEmpty()) {
-                if (!awaitCaptcha(current)) {
-                    if (!current.stopping) failRun(current, "Проверка Яндекса не пройдена")
+            if (Mobile.pendingCaptchaURL().isNotEmpty() && Mobile.pendingCaptchaProxy().isEmpty() &&
+                System.currentTimeMillis() >= captchaSnoozedUntil
+            ) {
+                if (awaitCaptcha(current)) {
+                    waited = 0
+                    continue
+                }
+                if (current.stopping) return
+                // "Позже": the other transports may still bring the connection up; only the wait for them runs out.
+                if (System.currentTimeMillis() >= captchaSnoozedUntil) {
+                    failRun(current, "Проверка Яндекса не пройдена")
                     return
                 }
-                waited = 0
-                continue
             }
             if (waited >= CONNECT_TIMEOUT_MS) {
                 failRun(current, "Транспорт не подключился за ${CONNECT_TIMEOUT_MS / 1000} секунд")

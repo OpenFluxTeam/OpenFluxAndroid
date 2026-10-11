@@ -10,6 +10,7 @@ import io.openflux.desktop.model.LogLine
 import io.openflux.desktop.model.NewChannel
 import io.openflux.desktop.model.NodeCoreSource
 import io.openflux.desktop.model.NodeDocuments
+import io.openflux.desktop.model.NodeMode
 import io.openflux.desktop.model.NodePlan
 import io.openflux.desktop.model.NodeTransport
 import io.openflux.desktop.model.NodeWizardException
@@ -68,9 +69,9 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
         return NewChannel(reply.string("id"), reply.string("key"))
     }
 
-    override suspend fun plan(channel: String, transports: List<NodeTransport>, withCookies: Boolean, autoUpdate: Boolean): NodePlan {
-        val reply = call("nodePlan", "channel=$channel ${transports.names()} withCookies=$withCookies autoUpdate=$autoUpdate") {
-            Mobile.nodePlan(channel, 0, transports.json(), withCookies, autoUpdate)
+    override suspend fun plan(channel: String, transports: List<NodeTransport>, withCookies: Boolean, autoUpdate: Boolean, mode: NodeMode): NodePlan {
+        val reply = call("nodePlan", "channel=$channel ${transports.names()} withCookies=$withCookies autoUpdate=$autoUpdate mode=${mode.cli}") {
+            Mobile.nodePlan(channel, 0, transports.json(), withCookies, autoUpdate, mode.cli)
         }
         return json.decodeFromJsonElement(NodePlan.serializer(), reply.getValue("plan"))
     }
@@ -82,9 +83,10 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
         autoUpdate: Boolean,
         sudoPassword: String,
         cookieHeader: String,
+        mode: NodeMode,
     ) {
-        call("nodeApply", "channel=${channel.id} ${transports.names()} port=$port autoUpdate=$autoUpdate") {
-            Mobile.nodeApply(channel.id, transports.json(), channel.key, port.toLong(), autoUpdate, sudoPassword, cookieHeader)
+        call("nodeApply", "channel=${channel.id} ${transports.names()} port=$port autoUpdate=$autoUpdate mode=${mode.cli}") {
+            Mobile.nodeApply(channel.id, transports.json(), channel.key, port.toLong(), autoUpdate, sudoPassword, cookieHeader, mode.cli)
         }
     }
 
@@ -100,9 +102,9 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
         return json.decodeFromJsonElement(InstalledChannel.serializer(), reply.getValue("channel"))
     }
 
-    override suspend fun setTransports(channel: String, transports: List<NodeTransport>, sudoPassword: String, cookieHeader: String): InstalledChannel {
-        val reply = call("nodeSetTransports", "channel=$channel ${transports.names()}") {
-            Mobile.nodeSetTransports(channel, transports.json(), cookieHeader, sudoPassword)
+    override suspend fun setTransports(channel: String, transports: List<NodeTransport>, sudoPassword: String, cookieHeader: String, mode: NodeMode?): InstalledChannel {
+        val reply = call("nodeSetTransports", "channel=$channel ${transports.names()} mode=${mode?.cli ?: "keep"}") {
+            Mobile.nodeSetTransports(channel, transports.json(), cookieHeader, sudoPassword, mode?.cli.orEmpty())
         }
         return json.decodeFromJsonElement(InstalledChannel.serializer(), reply.getValue("channel"))
     }
