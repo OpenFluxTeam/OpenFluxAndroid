@@ -5,6 +5,19 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [2.14.2] - 2026-10-11 (meepo161/OpenFluxAndroid)
+
+### Fixed
+
+- A server typed in under Ноды → Добавить сервер keeps its connection and takes
+  its own address as soon as it connects: the screens opened from it said
+  «← Новый сервер» instead of «← root@host». Found by driving the app against a
+  real server over SSH.
+- Wording that still named screens that are gone: the share hint said «Профили →
+  Импорт» (it is Подключения → Добавить), and a node made from a server's screen
+  no longer says its profile is needed to reach the node (the server's screen can
+  make it later with «Подключить себе»).
+
 ## [2.14.1] - 2026-10-11 (meepo161/OpenFluxAndroid)
 
 ### Fixed
