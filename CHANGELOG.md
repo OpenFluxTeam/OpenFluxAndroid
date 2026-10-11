@@ -5,6 +5,26 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-10-11 (meepo161/OpenFluxAndroid)
+
+### Added
+
+- **Сервер** is a scenario of its own under Ноды. Enter the address and way in
+  of a server once; its screen lists every node on it (state, port, mode,
+  transports) and from there each can be **changed** (transports, L3/L4, the
+  Yandex document; key, port and context stay, issued links keep working),
+  **connected** to this device, **shared** (QR and link), or **deleted**, and a
+  **new node** can be added without typing the way in again. A node that has no
+  profile here gets one made from the key the server reports. Servers entered
+  once are remembered (address only) in the Ноды list.
+
+### Changed
+
+- The node wizard only makes a new node (3 steps). Changing installed nodes is
+  gone from it and from the profile; a node's profile has "Управлять сервером"
+  that opens the server's screen. The core's `node-install.sh show` now returns
+  the channel's key to root over SSH (core 0.8.0).
+
 ## [2.13.0] - 2026-10-11 (meepo161/OpenFluxAndroid)
 
 ### Changed
