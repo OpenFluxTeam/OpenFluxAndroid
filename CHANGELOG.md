@@ -5,6 +5,13 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [2.14.1] - 2026-10-11 (meepo161/OpenFluxAndroid)
+
+### Fixed
+
+- A text link that does not fit on one line (the one under "Своих серверов пока
+  нет" on a phone with a large font) was cut off; it now takes the lines it needs.
+
 ## [2.14.0] - 2026-10-11 (meepo161/OpenFluxAndroid)
 
 ### Added
