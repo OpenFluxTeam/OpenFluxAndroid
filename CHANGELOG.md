@@ -3,7 +3,12 @@
 All notable changes to OpenFluxAndroid. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.5.1] - 2026-10-13
+
+Hotfix: core 0.6.1. The Mail.ru document carrier works again — the editor server began rejecting the old
+cursor-field data path with "access deny", so the tunnel now rides the document's chat channel, and the
+bundled scripted Mail.ru carrier (updated to 1.2.0) negotiates permessage-deflate on the WebSocket upgrade so
+it can connect at all.
 
 ## [2.5.0] - 2026-10-12
 
