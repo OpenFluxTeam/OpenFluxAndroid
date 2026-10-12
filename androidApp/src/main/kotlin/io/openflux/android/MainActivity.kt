@@ -26,6 +26,7 @@ import io.openflux.desktop.model.ThemeMode
 import io.openflux.desktop.ui.NoScrollbars
 import io.openflux.desktop.ui.Shortcuts
 import io.openflux.desktop.ui.home.HomeTab
+import io.openflux.app.shell.OpenFluxApp2
 import io.openflux.desktop.ui.shell.OpenFluxApp
 
 class MainActivity : ComponentActivity() {
@@ -63,7 +64,10 @@ class MainActivity : ComponentActivity() {
                 else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
             }
-            OpenFluxApp(container, NoScrollbars, remember { Shortcuts() }, WebBrowserViews)
+            // Debug builds: the second launcher icon ("OpenFlux · новый") runs the interface being rewritten.
+            val newUi = BuildConfig.DEBUG && componentName.className.endsWith(".NewUiActivity")
+            if (newUi) OpenFluxApp2(container, NoScrollbars, remember { Shortcuts() }, WebBrowserViews)
+            else OpenFluxApp(container, NoScrollbars, remember { Shortcuts() }, WebBrowserViews)
         }
     }
 
