@@ -5,6 +5,15 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-12
+
+### Changed
+
+- **Core updated to OpenFlux 0.6.0.** A node started from the app can now keep its scripted (`.flux`)
+  transports current and self-heal on its own (`--script-auto-update`): it pulls a published fix, rolls back
+  a bad one, and hot-swaps the new package into the live session with no restart. Also carries a fix to the
+  `node-install.sh` pin so node provisioning verifies the script this build actually ships.
+
 ## [2.4.1] - 2026-10-11
 
 The core 0.5.1.
