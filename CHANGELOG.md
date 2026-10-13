@@ -5,6 +5,55 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The whole interface is new**, written from scratch in the spirit of
+  AmneziaVPN: the same functions, much less text on the screen. Four places —
+  **Главная**, **Серверы**, **Поделиться**, **Настройки** — and one **＋** for
+  every way to add a connection (a key, a link, a file or a QR code; your own
+  server; a node on a web hosting without a server; an OpenFlux account; by
+  hand). Back goes back within a place and each place keeps its own screens;
+  in a wide window a list and the chosen item sit side by side.
+- **Главная**: one button, the chosen connection under it (tap to pick another),
+  the switches that matter, at most one message at a time, and the connection's
+  details folded under «Сведения». A profile's dot is green only while connected.
+- **Your own server** (Серверы): log in once (password or key, sudo, the server's
+  key fingerprint confirmed), see every node on it, add one in one tap («Быстро»:
+  direct only, L3 when the server supports it) or set it up, and **change a
+  node in place** — transports, L3/L4, documents, the Yandex sign-in — with the
+  number of changes shown and nothing sent until «Применить». Key, port and
+  context stay, so links already given out keep working. A new node is proven by
+  connecting through it before it is called done.
+- **Nodes on a web hosting** without a server: upload by FTP or add one already
+  there by its page address; start, stop, its panel, its key.
+- **Настройки** are one list of pages: Подключение, VPN и прокси, Аккаунт
+  OpenFlux, Сервисы (Yandex and Mail.ru sign-ins), Ядро, Внешний вид, Журнал,
+  Экспериментальное, О программе. The journal has search, filters
+  (Все/Важные/Ошибки), copy of what is shown and masking of addresses and keys.
+- Connecting is one rule everywhere — the button, Ctrl+Enter, the quick-settings tile and
+  «Подключаться при запуске» connect the chosen profile as a client; the exit
+  node starts only from «Это устройство», and stopping it returns to client mode.
+- The notification says the state in the same words as Главная.
+- A new release can be skipped («⋮ → Пропустить эту версию»), as before.
+
+### Fixed
+
+- Two servers no longer share one SSH connection, and more than five servers are
+  remembered.
+- The Yandex sign-in goes to a node only together with the document it was made
+  for, not with a different document pasted afterwards.
+- A hosting node whose check was not provable on Android is no longer reported
+  as failed; files left on a hosting after a failed install can be removed, or
+  the install retried without typing the FTP password again.
+- A JS transport with an invalid signature can no longer be installed.
+- Texts that promised more than the app does: JS transports run **without** a
+  sandbox (the old Settings text said otherwise), and the VPN text no longer
+  claims that nothing can leak.
+
+### Removed
+
+- The old interface and its navigation library (Voyager).
+
 ## [2.14.2] - 2026-10-11 (meepo161/OpenFluxAndroid)
 
 ### Fixed
