@@ -3,6 +3,14 @@
 All notable changes to OpenFluxAndroid. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.6.2] - 2026-10-13
+
+### Fixed
+
+- **An exit node in cups.online or Avito mode could not be started on the phone**: it asked for a document link.
+  Started with no room code, it now creates its rooms and the link it shares carries them (core 0.7.2).
+- **A dropped Avito connection could crash the app** (core 0.7.2).
+
 ## [2.6.1] - 2026-10-13
 
 ### Fixed
