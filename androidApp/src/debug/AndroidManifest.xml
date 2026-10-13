@@ -6,17 +6,5 @@
     <application
         android:networkSecurityConfig="@xml/network_security_config"
         tools:replace="android:networkSecurityConfig">
-        <!-- Debug builds only: a second launcher icon runs the new interface
-             (shared/docs/specs/2026-10-12-ui-redesign-design.md, 1a). -->
-        <activity-alias
-            android:name="io.openflux.android.NewUiActivity"
-            android:targetActivity="io.openflux.android.MainActivity"
-            android:label="OpenFlux · новый"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
     </application>
 </manifest>

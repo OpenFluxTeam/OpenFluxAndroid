@@ -17,8 +17,8 @@ import androidx.webkit.ProxyController
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import io.openflux.desktop.model.SetupPages
-import io.openflux.desktop.ui.BrowserPage
-import io.openflux.desktop.ui.BrowserViews
+import io.openflux.app.platform.BrowserPage
+import io.openflux.app.platform.BrowserViews
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

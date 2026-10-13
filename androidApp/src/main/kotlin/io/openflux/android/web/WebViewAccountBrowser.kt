@@ -5,7 +5,7 @@ import io.openflux.desktop.model.AccountCookies
 import io.openflux.desktop.model.AccountKind
 import io.openflux.desktop.model.YandexDisk
 import io.openflux.desktop.service.AccountBrowser
-import io.openflux.desktop.ui.BrowserPage
+import io.openflux.app.platform.BrowserPage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

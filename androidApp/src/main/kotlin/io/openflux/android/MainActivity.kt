@@ -23,11 +23,10 @@ import io.openflux.android.web.WebBrowserViews
 import io.openflux.desktop.model.ConnectionState
 import io.openflux.desktop.model.isActive
 import io.openflux.desktop.model.ThemeMode
-import io.openflux.desktop.ui.NoScrollbars
-import io.openflux.desktop.ui.Shortcuts
-import io.openflux.desktop.ui.home.HomeTab
-import io.openflux.app.shell.OpenFluxApp2
-import io.openflux.desktop.ui.shell.OpenFluxApp
+import io.openflux.app.platform.NoScrollbars
+import io.openflux.app.platform.Shortcuts
+import io.openflux.app.shell.OpenFluxApp
+import io.openflux.app.shell.connectChosen
 
 class MainActivity : ComponentActivity() {
     private val app get() = openFlux
@@ -48,7 +47,7 @@ class MainActivity : ComponentActivity() {
             connectFromTile(intent)
             // "Подключаться при запуске", once per launch of the app, not per screen rotation.
             if (container.settings.settings.value.autoConnect && container.connection.state.value == ConnectionState.Idle) {
-                HomeTab.connectSelected(container)
+                connectChosen(container)
             }
         }
         setContent {
@@ -64,10 +63,7 @@ class MainActivity : ComponentActivity() {
                 else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
             }
-            // Debug builds: the second launcher icon ("OpenFlux · новый") runs the interface being rewritten.
-            val newUi = BuildConfig.DEBUG && componentName.className.endsWith(".NewUiActivity")
-            if (newUi) OpenFluxApp2(container, NoScrollbars, remember { Shortcuts() }, WebBrowserViews)
-            else OpenFluxApp(container, NoScrollbars, remember { Shortcuts() }, WebBrowserViews)
+            OpenFluxApp(container, NoScrollbars, remember { Shortcuts() }, WebBrowserViews)
         }
     }
 
@@ -98,7 +94,7 @@ class MainActivity : ComponentActivity() {
         if (intent?.getBooleanExtra(EXTRA_CONNECT, false) != true) return
         intent.removeExtra(EXTRA_CONNECT)
         val container = app.container
-        if (!container.connection.state.value.isActive) HomeTab.connectSelected(container)
+        if (!container.connection.state.value.isActive) connectChosen(container)
     }
 
     /** An openflux:// link from the system camera or a chat goes to the import dialog. */

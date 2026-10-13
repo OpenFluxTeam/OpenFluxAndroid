@@ -31,9 +31,9 @@ import io.openflux.desktop.model.TransportType
 import io.openflux.desktop.model.YandexDisk
 import io.openflux.desktop.service.ConnectionService
 import io.openflux.desktop.service.SettingsRepository
-import io.openflux.desktop.ui.BrowserPage
-import io.openflux.desktop.ui.Format
-import io.openflux.desktop.ui.look
+import io.openflux.app.home.statusLine
+import io.openflux.app.platform.BrowserPage
+import io.openflux.app.text.Fmt
 import org.json.JSONObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -557,13 +557,13 @@ class AndroidConnectionService(
     }
 
     private fun notificationText(current: Run): String {
-        val look = _state.value.look().title
+        val look = statusLine(_state.value)
         val traffic = _traffic.value
         // Which carriers: "Volga + Мой транспорт", a script by its own name (the core only calls it "script").
         val names = traffic.activeCarriers
         val via = if (names.isEmpty()) "" else " · " + current.profile.carrierLabels(names, scripts?.scripts?.value.orEmpty())
         return when (_state.value) {
-            is ConnectionState.Connected -> "$look · ↓ ${Format.speed(traffic.downBytesPerSec)}  ↑ ${Format.speed(traffic.upBytesPerSec)}$via"
+            is ConnectionState.Connected -> "$look · ↓ ${Fmt.speed(traffic.downBytesPerSec)}  ↑ ${Fmt.speed(traffic.upBytesPerSec)}$via"
             else -> if (current.notice.isNotEmpty()) "$look · ${current.notice}" else look
         }
     }

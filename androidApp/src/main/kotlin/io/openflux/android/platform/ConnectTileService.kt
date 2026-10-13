@@ -12,7 +12,8 @@ import io.openflux.android.OpenFluxApplication
 import io.openflux.android.R
 import io.openflux.desktop.model.ConnectionState
 import io.openflux.desktop.model.isActive
-import io.openflux.desktop.ui.home.HomeTab
+import io.openflux.app.shell.connectChosen
+import io.openflux.app.shell.stopConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -71,7 +72,7 @@ class ConnectTileService : TileService() {
         super.onClick()
         val container = app.container
         if (container.connection.state.value.isActive) {
-            container.connection.disconnect()
+            stopConnection(container)
             return
         }
         val hasProfile = container.profiles.profiles.value.isNotEmpty()
@@ -80,7 +81,7 @@ class ConnectTileService : TileService() {
             openApp(connectAfter = hasProfile)
             return
         }
-        HomeTab.connectSelected(container)
+        connectChosen(container)
     }
 
     private fun openApp(connectAfter: Boolean) {
