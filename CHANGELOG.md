@@ -5,6 +5,13 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-10-14 (meepo161/OpenFluxAndroid)
+
+### Fixed
+
+- The 3.2.0 build did not compile (a property's setter landed on the wrong
+  line); 3.2.1 is 3.2.0 as described below.
+
 ## [3.2.0] - 2026-10-14 (meepo161/OpenFluxAndroid)
 
 ### Added

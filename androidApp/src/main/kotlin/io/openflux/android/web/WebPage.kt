@@ -61,10 +61,10 @@ class WebPage(
     private val setupPage: Boolean get() = html != null || own
 
     @Volatile var url: String = startUrl
+        private set
 
     /** Every main-frame address since the page opened, oldest first (a fragment the page then clears stays here). */
     val history = java.util.concurrent.CopyOnWriteArrayList<String>()
-        private set
     @Volatile var loading = true
         private set
     @Volatile var closed = false
