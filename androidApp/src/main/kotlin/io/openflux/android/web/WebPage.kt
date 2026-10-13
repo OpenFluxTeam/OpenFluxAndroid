@@ -61,6 +61,9 @@ class WebPage(
     private val setupPage: Boolean get() = html != null || own
 
     @Volatile var url: String = startUrl
+
+    /** Every main-frame address since the page opened, oldest first (a fragment the page then clears stays here). */
+    val history = java.util.concurrent.CopyOnWriteArrayList<String>()
         private set
     @Volatile var loading = true
         private set
@@ -112,11 +115,17 @@ class WebPage(
         web.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 this@WebPage.url = url
+                history.add(url)
                 loading = true
                 // Where a sign-in goes, for adb logcat -s OpenFluxWeb; no query (tokens live there).
                 if (view.context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
                     android.util.Log.d("OpenFluxWeb", url.substringBefore('?').substringBefore('#'))
                 }
+            }
+
+            // Addresses a page changes without loading (a fragment) count too.
+            override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
+                if (history.lastOrNull() != url) history.add(url)
             }
 
             override fun onPageFinished(view: WebView, url: String) {

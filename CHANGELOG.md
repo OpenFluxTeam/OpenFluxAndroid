@@ -5,6 +5,36 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-14 (meepo161/OpenFluxAndroid)
+
+### Added
+
+- **The OpenFlux bot.** A connection bought in @openflux_bot comes in by its
+  link (link.openflux.dev/…: paste it, scan it, or open it from Telegram) and stays current by
+  itself; when the bot no longer serves it (the subscription ended or the
+  connection was replaced) the app says so and leads to the bot for the new
+  one. «Войти через Telegram» registers and signs in with the bot, and the
+  subscription bought there shows on the subscription screen. Buying stays in
+  the bot for now.
+- **The node wizard installs every transport**: Yandex Telemost (a conference
+  link), Avito Code (its rooms are made at once, no sign-in) and the signed JS
+  transports installed in the app (with the experimental features on: the app
+  sends the package, the node keeps it updated). A node's profile gets its JS
+  transports too.
+- **Avito Code** in profiles and subscriptions.
+
+### Fixed
+
+- **A new subscription's location showed only after «Обновить».** The service
+  makes a personal node on the first request and answers with no location
+  until it is up; the app now asks again every 15 seconds while the location
+  is being made, and Home says «Готовим вашу локацию».
+
+### Changed
+
+- Core OpenFlux 0.11.0 (p1neappleXpress 0.7.2: an Avito connection that drops
+  no longer crashes the app). Nodes install node-v1.5.0.
+
 ## [3.1.0] - 2026-10-13 (meepo161/OpenFluxAndroid)
 
 ### Added

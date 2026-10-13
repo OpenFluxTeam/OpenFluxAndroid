@@ -44,6 +44,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="openflux" />
             </intent-filter>
+            <!-- The OpenFlux bot's connection links (link.openflux.dev/<token>): offered next to the browser. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="link.openflux.dev" />
+            </intent-filter>
         </activity>
 
         <!-- The quick-settings tile: connect / disconnect from the status bar's panel. -->

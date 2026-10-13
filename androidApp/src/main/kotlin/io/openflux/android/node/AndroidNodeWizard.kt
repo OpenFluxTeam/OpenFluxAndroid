@@ -93,6 +93,9 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
     override suspend fun createCupsRooms(): String =
         call("nodeCreateCupsRooms") { Mobile.nodeCreateCupsRooms() }.string("rooms")
 
+    override suspend fun createAvitoRooms(): String =
+        call("nodeCreateAvitoRooms") { Mobile.nodeCreateAvitoRooms() }.string("rooms")
+
     override suspend fun remove(channel: String, sudoPassword: String) {
         call("nodeRemove", "channel=$channel") { Mobile.nodeRemove(channel, sudoPassword) }
     }
