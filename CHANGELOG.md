@@ -5,6 +5,17 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-13 (meepo161/OpenFluxAndroid)
+
+### Fixed
+
+- **Mail.ru works again.** The Mail.ru editor server now closes the socket on the
+  synthetic cursor writes the carrier used, so every connection dropped with
+  "access deny". The core (OpenFlux 0.9.0, with p1neappleXpress 0.6.1) carries
+  the tunnel over the document's chat channel instead; the scripted Mail.ru
+  carrier connects again too. The node must run node-v1.4.2 or newer — nodes
+  with auto-update take it by themselves.
+
 ## [3.0.0] - 2026-10-13 (meepo161/OpenFluxAndroid)
 
 ### Changed
