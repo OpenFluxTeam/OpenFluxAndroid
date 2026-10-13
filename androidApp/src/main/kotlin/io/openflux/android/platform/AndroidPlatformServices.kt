@@ -115,6 +115,13 @@ class AndroidPlatformServices(
         clipboard.setPrimaryClip(ClipData.newPlainText("OpenFlux", text))
     }
 
+    override val shareSupported = true
+
+    override fun shareText(text: String): Boolean = runCatching {
+        val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+        context.startActivity(Intent.createChooser(send, "OpenFlux").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }.isSuccess
+
     override val clipboardImageSupported = false
 
     override fun qrFromClipboardImage(): String? = null

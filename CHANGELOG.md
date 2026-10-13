@@ -5,6 +5,32 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-13 (meepo161/OpenFluxAndroid)
+
+### Added
+
+- **A payment survives closing the app.** An order waiting to be paid is kept on
+  the device and asked about first on every refresh, so paying in a bank's app
+  while OpenFlux is closed extends the subscription on the next start. The
+  subscription card says "Ждём оплату заказа …" with "Проверить" and "Открыть
+  оплату снова".
+- **The subscription service can move.** When it announces a new address, the
+  app follows it once the new address answers with its certificate, and stays
+  signed in.
+- **Yandex Telemost in profiles and subscriptions.** A link with Telemost no
+  longer loses the location; the app tells the service which transports it runs,
+  so a subscription never sends one it cannot use.
+- **Share a link to any app.** Giving a profile and the running node offer
+  the system share sheet (any messenger or mail), besides copying the link.
+- **The exit node on Home.** While nothing runs, a "Клиент / Выходная нода" switch
+  above the button shows the node's controls, QR and link right there.
+
+### Changed
+
+- Core OpenFlux 0.10.0 (with p1neappleXpress 0.7.1): the avito carrier, and
+  cups.online over several rooms at once — about 4× faster on a node that prints
+  the new room list.
+
 ## [3.0.1] - 2026-10-13 (meepo161/OpenFluxAndroid)
 
 ### Fixed
