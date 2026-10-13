@@ -482,6 +482,60 @@ submodule and the node wizard's core come from the fork's repositories
   is never put into the core: its transport opens the document anonymously.
 - Cups.online: «Сгенерировать комнаты» in the profile editor opens four
   rooms without a node.
+## [2.4.1] - 2026-10-11 (p1neappleXpress/OpenFluxAndroid)
+
+The core 0.5.1.
+
+### Fixed
+
+- **Telemost no longer joins the room as «OpenFlux».** Lanes join as «Гость» with a browser-like
+  RTCP CNAME, so the participant name no longer gives the tunnel away (core #169).
+- **Mail.ru Docs:** `Accept-Language` now rides on the WebSocket upgrade and the API calls, for
+  clients that still saw 409 after the earlier User-Agent fix (core #164).
+- **Telemost stability:** an exit no longer crashes when a peer leaves mid-transfer, and downloads
+  through an L4 exit are no longer capped near 1.5 MB/s (core 0.5.1).
+
+## [2.4.0] - 2026-10-11 (p1neappleXpress/OpenFluxAndroid)
+
+The core 0.5.0: the Telemost transport.
+
+### Added
+
+- **Yandex Telemost as a transport (experimental).** A profile of the type «Яндекс Телемост» needs only the
+  link of a Telemost conference that the exit node joins too; the tunnel rides the conference as video,
+  striped over five participants on each end (core 0.5.0, `OpenFlux` bumped to
+  [`7336e1b`](https://github.com/p1neappleXpress/OpenFlux/commit/7336e1b)). The exit is the 0.5.0 core
+  (`node-v1.3.0`) started with `-role exit -t telemost -u <conference link>`; its `--share` link imports as
+  a profile and runs through the VPN. Measured on a phone through a server exit: about 0.8-1.5 MB/s on
+  average; the first seconds of every transfer are slower while the conference ramps up. One conference
+  serves one client.
+
+### Changed
+
+- **The tunnel's TCP rides out a late carrier.** Carriers deliver in order but now and then late; the
+  tunnel's TCP now waits that out (a 3-second retransmission floor, loss detection by duplicate ACKs)
+  instead of shrinking its window to a crawl (core 0.5.0).
+
+## [2.3.3] - 2026-10-11 (p1neappleXpress/OpenFluxAndroid)
+
+Hotfix: the core 0.4.3 — the Yandex and Mail.ru carriers.
+
+### Fixed
+
+- **Yandex: the carrier relays tunnel packets again.** The outgoing cursor message declared a fixed
+  length of `18` before its payload, but Yandex Disk does not relay a cursor whose declared length does
+  not match the packet, so every tunnel packet was dropped and the Session handshake timed out. The real
+  packet length is sent now (core 0.4.3, `OpenFlux` bumped to
+  [`d7105bd`](https://github.com/p1neappleXpress/OpenFlux/commit/d7105bd)). Verified end to end from this
+  app: a real HTTPS request over the Yandex carrier reaches the exit. Reported by @Gamazzz
+  ([OpenFlux#165](https://github.com/p1neappleXpress/OpenFlux/issues/165)) — thank you.
+- **Mail.ru Docs: the carrier comes up on public links again.** Mail.ru's nginx answered `409 Conflict`
+  to the WebSocket upgrade, so the transport never connected; it now offers `permessage-deflate` and uses
+  a current Firefox `User-Agent`. Reported by @pirsasha
+  ([OpenFlux#163](https://github.com/p1neappleXpress/OpenFlux/issues/163)) and @Shiller70
+  ([OpenFlux#164](https://github.com/p1neappleXpress/OpenFlux/issues/164)) — thank you. Exit nodes on a
+  VDS need the same core: «Своя нода» installs `node-v1.2.3`.
+
 ## [2.3.2] - 2026-10-07
 
 Hotfix: the core 0.4.2.
