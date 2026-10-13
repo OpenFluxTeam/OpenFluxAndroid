@@ -5,6 +5,8 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-13 (meepo161/OpenFluxAndroid)
+
 ### Changed
 
 - **The whole interface is new**, written from scratch in the spirit of
