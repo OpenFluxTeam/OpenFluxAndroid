@@ -5,6 +5,12 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-10-14 (OpenFluxTeam/OpenFluxAndroid)
+
+### Changed
+
+- **The journal says whether the node really works.** «Канал до ноды поднят» when the link is up; in the VPN mode the app cannot check the address itself, so the line says how: open api.ipify.org in the browser, it must show the node's address. The core's useful lines (key confirmed, encryption on, fall back to the classic mode, a captcha is asked for) are also said in plain Russian next to the core's own text.
+- Version aligned with the desktop app (the desktop sign-in fix does not touch Android).
 ## [3.4.0] - 2026-10-14 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Changed

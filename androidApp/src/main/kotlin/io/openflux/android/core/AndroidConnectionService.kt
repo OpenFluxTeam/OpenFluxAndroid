@@ -19,6 +19,7 @@ import io.openflux.bridge.mobile.Mobile
 import io.openflux.desktop.model.AppSettings
 import io.openflux.desktop.model.CaptchaPrompt
 import io.openflux.desktop.model.ConnectionMode
+import io.openflux.desktop.model.ConnectionNarrative
 import io.openflux.desktop.model.ConnectionState
 import io.openflux.desktop.model.CoreConfig
 import io.openflux.desktop.model.ExitAddress
@@ -535,7 +536,11 @@ class AndroidConnectionService(
         if (first) current.connectedSince = System.currentTimeMillis()
         if (_state.value !is ConnectionState.Connected) {
             _state.value = ConnectionState.Connected(current.profile, current.settings.mode, current.connectedSince)
-            if (first) log(LogLevel.Success, if (current.kind == Kind.Exit) "Нода запущена" else "Подключено к ноде")
+            if (first) {
+                val said = if (current.kind == Kind.Exit) ConnectionNarrative.linkUp(ConnectionMode.Exit, emptyList())
+                else ConnectionNarrative.linkUpUnchecked(_traffic.value.activeCarriers)
+                log(said.level, said.text)
+            }
             else log(LogLevel.Info, "Связь с нодой восстановлена")
             if (current.kind != Kind.Exit) refreshExitAddress()
             if (first && ownsExit(current)) scope.launch {
@@ -771,6 +776,7 @@ class AndroidConnectionService(
             // The core itself only emits up to the level startCarrier set via
             // Mobile.setDebugLevel, so nothing left to filter here.
             log(levelOf(line), line)
+            ConnectionNarrative.readCoreLine(line)?.let { log(it.level, it.text) }
         }
     }
 
