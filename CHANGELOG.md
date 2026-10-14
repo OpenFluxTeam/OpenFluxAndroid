@@ -3,6 +3,14 @@
 All notable changes to OpenFluxAndroid. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.6.3] - 2026-10-14
+
+### Changed
+
+- **Mail.ru is much faster** (core 0.7.3): the tunnel packs far more into each editor-chat message before
+  the server's ~12-message cut, lifting end-to-end throughput from tens of KB/s to roughly 800 KB/s per
+  burst. "Своя нода" installs node-v1.4.2.
+
 ## [2.6.2] - 2026-10-13
 
 ### Fixed
