@@ -5,6 +5,10 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Signing in is on the OpenFlux page (id.openflux.dev):** by email or through Telegram. «Войти» opens the page in a Custom Tab and brings you back; the subscription and the connection appear by themselves. The sign-in through confirmation in the bot (3.3.0) is gone, the service no longer has it. A session from 3.3.0 keeps working. It needs the service's app sign-in (`auth/app/exchange`) and, in the build, an app key (`-Popenflux.appKey=ofk_…` or `OPENFLUX_APP_KEY`).
+
 ## [3.3.0] - 2026-10-14 (meepo161/OpenFluxAndroid)
 
 ### Changed
