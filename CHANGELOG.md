@@ -5,6 +5,15 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Signing in is through Telegram only.** «Войти через Telegram» opens the bot,
+  you confirm the sign-in there and come back: the subscription and the
+  connection appear by themselves, no link to paste. The password sign-in,
+  registration and recovery key are gone (an account already signed in keeps
+  working). It needs the service's app sign-in (`auth/app/start`) and an app
+  key in the build (`-Popenflux.appKey=ofk_…` or `OPENFLUX_APP_KEY`).
+
 ## [3.2.1] - 2026-10-14 (meepo161/OpenFluxAndroid)
 
 ### Fixed

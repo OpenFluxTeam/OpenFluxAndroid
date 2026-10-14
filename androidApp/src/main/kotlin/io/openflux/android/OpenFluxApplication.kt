@@ -70,7 +70,7 @@ class OpenFluxApplication : Application() {
             phpHosting = phpHosting,
             subscriptionApi = io.openflux.desktop.data.HttpSubscriptionApi(),
             subscriptionRepo = io.openflux.desktop.data.FileSubscriptionRepository(noBackupFilesDir),
-            botApi = io.openflux.desktop.data.HttpBotApi(),
+            botApi = io.openflux.desktop.data.HttpBotApi(appKey = io.openflux.desktop.data.AppKeys.valid(BuildConfig.APP_KEY)),
             botRepo = io.openflux.desktop.data.FileBotRepository(noBackupFilesDir),
             settingsPageHost = io.openflux.android.web.AndroidSettingsPageHost,
         )
