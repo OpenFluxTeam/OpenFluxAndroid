@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
     /** An openflux:// link from the system camera or a chat goes to the import dialog. */
     private fun handleLink(intent: Intent?) {
         val link = intent?.takeIf { it.action == Intent.ACTION_VIEW }?.dataString ?: return
+        if (app.signIn.deliver(link)) return
         if (link.startsWith("openflux://") || io.openflux.desktop.model.OpenFluxBot.looksLike(link)) app.container.incomingLink.value = link
     }
 

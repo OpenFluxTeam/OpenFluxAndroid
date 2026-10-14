@@ -51,6 +51,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="link.openflux.dev" />
             </intent-filter>
+            <!-- The way back from the OpenFlux sign-in page (id.openflux.dev) with its one-time code. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="io.openflux.client" />
+            </intent-filter>
         </activity>
 
         <!-- The quick-settings tile: connect / disconnect from the status bar's panel. -->

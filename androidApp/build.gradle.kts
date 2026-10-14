@@ -15,6 +15,9 @@ val appVersionCode = appVersion.split('.', '-').take(3).map { it.toIntOrNull() ?
 /** The key that names this build to the OpenFlux service: -Popenflux.appKey=ofk_… or OPENFLUX_APP_KEY. It is not committed. */
 val appKey = ((findProperty("openflux.appKey") as String?) ?: System.getenv("OPENFLUX_APP_KEY")).orEmpty().trim()
 
+/** The Keycloak client of the OpenFlux sign-in page: -Popenflux.clientId=… or OPENFLUX_CLIENT_ID; ours by default. */
+val clientId = ((findProperty("openflux.clientId") as String?) ?: System.getenv("OPENFLUX_CLIENT_ID")).orEmpty().trim().ifEmpty { "openflux-android" }
+
 /** The core the gomobile library was built from, written by scripts/build-android-core.sh. */
 val coreVersion = file("libs/openflux-core.version").takeIf { it.isFile }?.readText()?.trim() ?: "встроенное"
 
@@ -35,6 +38,7 @@ android {
         versionName = appVersion
         buildConfigField("String", "CORE_VERSION", "\"$coreVersion\"")
         buildConfigField("String", "APP_KEY", "\"$appKey\"")
+        buildConfigField("String", "CLIENT_ID", "\"$clientId\"")
     }
 
     buildFeatures {
@@ -85,6 +89,7 @@ dependencies {
     implementation(project(":shared"))
     // The OpenFlux core (gomobile), built by scripts/build-android-core.sh.
     implementation(files("libs/openflux.aar"))
+    implementation(libs.androidx.browser)
     implementation(libs.compose.runtime)
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)

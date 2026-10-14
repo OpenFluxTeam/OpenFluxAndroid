@@ -43,6 +43,10 @@ class OpenFluxApplication : Application() {
     /** An activity of the app is on screen (captcha requests notify otherwise). */
     @Volatile var visible = false
 
+    /** The way back from the sign-in page; [MainActivity] hands it the address the browser returned to. */
+    lateinit var signIn: io.openflux.desktop.data.RedirectSignIn
+        private set
+
     override fun onCreate() {
         super.onCreate()
         // On a phone the VPN is what "connected" means; the proxy is the opt-out.
@@ -57,6 +61,9 @@ class OpenFluxApplication : Application() {
         val scripts = AndroidScriptRepository(this)
         connection = AndroidConnectionService(this, settings, bridge, accounts, scripts)
         val phpHosting = PhpHostingService(AndroidPhpTransport(), clock = System::currentTimeMillis)
+        signIn = io.openflux.desktop.data.RedirectSignIn(
+            BuildConfig.CLIENT_ID, "io.openflux.client:/oauth2redirect", open = ::openSignInPage,
+        )
         container = AppContainer(
             profiles = FileProfileRepository(filesDir),
             settings = settings,
@@ -72,6 +79,7 @@ class OpenFluxApplication : Application() {
             subscriptionRepo = io.openflux.desktop.data.FileSubscriptionRepository(noBackupFilesDir),
             botApi = io.openflux.desktop.data.HttpBotApi(appKey = io.openflux.desktop.data.AppKeys.valid(BuildConfig.APP_KEY)),
             botRepo = io.openflux.desktop.data.FileBotRepository(noBackupFilesDir),
+            signIn = signIn,
             settingsPageHost = io.openflux.android.web.AndroidSettingsPageHost,
         )
         // The subscription's list of locations is refreshed in the background.
@@ -94,6 +102,17 @@ class OpenFluxApplication : Application() {
                     Log.e("OpenFluxJS", "engine self-test failed", t)
                 }
             }
+        }
+    }
+
+    /** The sign-in page in a Custom Tab (never a WebView); the system browser when no browser supports Custom Tabs. */
+    private fun openSignInPage(url: String) {
+        try {
+            val tab = androidx.browser.customtabs.CustomTabsIntent.Builder().setShowTitle(true).build()
+            tab.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            tab.launchUrl(this, android.net.Uri.parse(url))
+        } catch (e: android.content.ActivityNotFoundException) {
+            container.platform.openUrl(url)
         }
     }
 }
