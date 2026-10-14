@@ -5,6 +5,12 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.4.2] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
+
+### Fixed
+
+- **A connection of the bot the app cannot read is said with its reason** (for example the transport the app's core does not know), not just «обновите приложение»; one unreadable connection no longer stops the others.
+- **No connection because of a slot is explained in the service's own words**, and a paused connection no longer makes the app wait for it forever.
 ## [3.4.1] - 2026-10-14 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Changed
