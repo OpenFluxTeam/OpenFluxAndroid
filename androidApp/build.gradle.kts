@@ -12,6 +12,9 @@ val appVersion = (findProperty("appVersion") as String?)?.removePrefix("v")?.tak
 val appVersionCode = appVersion.split('.', '-').take(3).map { it.toIntOrNull() ?: 0 }
     .let { (it + listOf(0, 0, 0)).take(3) }.let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
 
+/** The key that names this build to the OpenFlux service: -Popenflux.appKey=ofk_… or OPENFLUX_APP_KEY. It is not committed. */
+val appKey = ((findProperty("openflux.appKey") as String?) ?: System.getenv("OPENFLUX_APP_KEY")).orEmpty().trim()
+
 /** The core the gomobile library was built from, written by scripts/build-android-core.sh. */
 val coreVersion = file("libs/openflux-core.version").takeIf { it.isFile }?.readText()?.trim() ?: "встроенное"
 
@@ -31,6 +34,7 @@ android {
         versionCode = appVersionCode
         versionName = appVersion
         buildConfigField("String", "CORE_VERSION", "\"$coreVersion\"")
+        buildConfigField("String", "APP_KEY", "\"$appKey\"")
     }
 
     buildFeatures {
