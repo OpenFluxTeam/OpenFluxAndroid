@@ -12,8 +12,8 @@ val appVersion = (findProperty("appVersion") as String?)?.removePrefix("v")?.tak
 val appVersionCode = appVersion.split('.', '-').take(3).map { it.toIntOrNull() ?: 0 }
     .let { (it + listOf(0, 0, 0)).take(3) }.let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
 
-/** The key that names this build to the OpenFlux service: -Popenflux.appKey=ofk_… or OPENFLUX_APP_KEY. It is not committed. */
-val appKey = ((findProperty("openflux.appKey") as String?) ?: System.getenv("OPENFLUX_APP_KEY")).orEmpty().trim()
+/** The id that names this build to the OpenFlux service (an identifier, not a secret): -Popenflux.appId=ofa_… or OPENFLUX_APP_ID. */
+val appId = ((findProperty("openflux.appId") as String?) ?: System.getenv("OPENFLUX_APP_ID")).orEmpty().trim()
 
 /** The Keycloak client of the OpenFlux sign-in page: -Popenflux.clientId=… or OPENFLUX_CLIENT_ID; ours by default. */
 val clientId = ((findProperty("openflux.clientId") as String?) ?: System.getenv("OPENFLUX_CLIENT_ID")).orEmpty().trim().ifEmpty { "openflux-android" }
@@ -37,7 +37,7 @@ android {
         versionCode = appVersionCode
         versionName = appVersion
         buildConfigField("String", "CORE_VERSION", "\"$coreVersion\"")
-        buildConfigField("String", "APP_KEY", "\"$appKey\"")
+        buildConfigField("String", "APP_ID", "\"$appId\"")
         buildConfigField("String", "CLIENT_ID", "\"$clientId\"")
     }
 

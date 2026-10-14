@@ -77,7 +77,7 @@ class OpenFluxApplication : Application() {
             phpHosting = phpHosting,
             subscriptionApi = io.openflux.desktop.data.HttpSubscriptionApi(),
             subscriptionRepo = io.openflux.desktop.data.FileSubscriptionRepository(noBackupFilesDir),
-            botApi = io.openflux.desktop.data.HttpBotApi(appKey = io.openflux.desktop.data.AppKeys.valid(BuildConfig.APP_KEY)),
+            botApi = io.openflux.desktop.data.HttpBotApi(appId = io.openflux.desktop.data.AppIds.valid(BuildConfig.APP_ID)),
             botRepo = io.openflux.desktop.data.FileBotRepository(noBackupFilesDir),
             signIn = signIn,
             settingsPageHost = io.openflux.android.web.AndroidSettingsPageHost,
