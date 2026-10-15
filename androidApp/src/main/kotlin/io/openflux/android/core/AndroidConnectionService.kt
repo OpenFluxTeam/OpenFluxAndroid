@@ -111,7 +111,7 @@ class AndroidConnectionService(
         @Volatile var notice = ""
         /** The sign-ins handed to the exit this run, not to send the same twice. */
         val pushed = java.util.concurrent.ConcurrentHashMap<AccountKind, Map<String, String>>()
-        /** The networks the carriers are bound to (bonding), null when none. */
+        /** The networks the carriers are bound to, null when none. */
         @Volatile var networks: NetworkBinding? = null
     }
 
@@ -354,8 +354,8 @@ class AndroidConnectionService(
     }
 
     /**
-     * Brings up the networks the profile's carriers are bound to (bonding:
-     * mobile data next to Wi-Fi) before the core dials; a network that
+     * Brings up the networks the profile's carriers are bound to (mobile
+     * data next to Wi-Fi) before the core dials; a network that
      * does not come up leaves its carriers out, the others carry on.
      */
     private suspend fun bindNetworks(current: Run) {
@@ -371,7 +371,6 @@ class AndroidConnectionService(
             "Сети для транспортов: " + kinds.joinToString { it.label + if (it.cli in up) " есть" else " нет" } +
                 if (missing.isEmpty()) "" else ". Транспорты на «$missing» не подключатся, пока сеть не появится",
         )
-        if (current.profile.bonding) log(LogLevel.Info, "Бондинг: транспорты работают одновременно, когда нода согласится")
     }
 
     private fun startCarrier(current: Run): String {

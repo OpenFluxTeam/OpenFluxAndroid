@@ -51,11 +51,9 @@ internal object CoreSpecs {
                 })
             }
         }
-        val bonding = !exit && profile.bonding
-        if (profile.context.isBlank() && !bonding) return transports.toString()
+        if (profile.context.isBlank()) return transports.toString()
         return buildJsonObject {
-            if (profile.context.isNotBlank()) put("context", profile.context)
-            if (bonding) put("bonding", true)
+            put("context", profile.context)
             put("transports", transports)
         }.toString()
     }

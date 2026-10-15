@@ -12,8 +12,8 @@ import kotlinx.coroutines.delay
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * The networks a profile's carriers are bound to (bonding: mobile data and
- * Wi-Fi at once). Android drops mobile data while Wi-Fi is up unless an app
+ * The networks a profile's carriers are bound to (mobile data and Wi-Fi
+ * at once). Android drops mobile data while Wi-Fi is up unless an app
  * asks for it, so every network named is requested for as long as the
  * connection runs; the core binds each carrier's sockets to its network
  * through [bindSocket].
