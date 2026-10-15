@@ -5,6 +5,12 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.5.1] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
+
+### Fixed
+
+- **A purchase paid at once no longer opens the browser.** The free way settles the invoice on arrival and gives only a placeholder link, which led to telegram.org; now the sheet goes straight to «Оплачено» and the connection comes by itself. A real way to pay (Platega, CryptoPay) still opens its page.
+
 ## [3.5.0] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Added
