@@ -5,6 +5,14 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.6.3] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
+
+3.6.2 was not published: its build stopped on a test that still expected the old rule. Its fixes ship here.
+
+### Fixed
+
+- The tests follow the new rule for a place without documents (it connects through cups.online and Avito).
+
 ## [3.6.2] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Fixed
