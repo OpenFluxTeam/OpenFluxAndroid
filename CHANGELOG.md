@@ -5,6 +5,13 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
+
+### Added
+
+- **The node wizard makes a Telemost conference.** «Создать в Телемосте» opens telemost.yandex.ru in the built-in browser with the Yandex account; press «Создать видеовстречу» there and the conference link goes into the field by itself.
+- **Avito Code and cups.online rooms with a button.** With the transport on, the wizard shows the code of its rooms: «Создать комнаты» makes them at once (on the server, as when applying), «Новые комнаты» replaces them, and a code can be pasted to reuse rooms. A changed code counts as a change of the node.
+
 ## [3.5.1] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Fixed
