@@ -5,6 +5,13 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.6.2] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
+
+### Fixed
+
+- **The purchase picks another way to pay.** The ways were shown but a tap on them did nothing, so the first one was always used.
+- **A place connects without documents of its own.** «Подключить» and «Запустить» no longer wait for a document: without one the connection goes through cups.online and Avito, which need no account. A document can still be added for another transport.
+
 ## [3.6.1] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Changed
