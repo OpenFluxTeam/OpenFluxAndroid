@@ -38,7 +38,7 @@ internal object CoreSpecs {
     ): String {
         val specs = profile.sessionSpecs().filterNot { exit && it.type == TransportType.DIRECT }
         val transports = buildJsonArray {
-            for (spec in specs) add(spec(spec.name, spec.type, spec.value, spec.uid, spec.priority, spec.scriptId, spec.settings, resolveScript))
+            for (spec in specs) add(spec(spec.name, spec.type, spec.value, spec.uid, spec.priority, spec.scriptId, spec.settings, resolveScript, spec.network.cli))
             // The exit listens for direct only when the profile has it.
             val direct = profile.carriers.firstOrNull { it.type == TransportType.DIRECT }
             if (exit && direct != null) {
@@ -51,9 +51,11 @@ internal object CoreSpecs {
                 })
             }
         }
-        if (profile.context.isBlank()) return transports.toString()
+        val bonding = !exit && profile.bonding
+        if (profile.context.isBlank() && !bonding) return transports.toString()
         return buildJsonObject {
-            put("context", profile.context)
+            if (profile.context.isNotBlank()) put("context", profile.context)
+            if (bonding) put("bonding", true)
             put("transports", transports)
         }.toString()
     }
@@ -67,11 +69,13 @@ internal object CoreSpecs {
         scriptId: String,
         settings: Map<String, String>,
         resolveScript: (String) -> ScriptCarrier?,
+        network: String,
     ): JsonObject = buildJsonObject {
         val script = if (type == TransportType.SCRIPT) resolveScript(scriptId) else null
         // A script carrier keeps the core's generic "script" type; its id is only
         // a local pointer to the pinned file, so name it script / script-N too.
         put("name", if (type == TransportType.SCRIPT) name.replace(TransportType.SCRIPT.cliName, "script") else name)
+        if (network.isNotEmpty()) put("network", network)
         put("type", type.cliName)
         put("url", if (type == TransportType.DIRECT || type == TransportType.ONEME) "" else value)
         put("priority", priority)
