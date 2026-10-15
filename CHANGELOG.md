@@ -5,6 +5,17 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
+
+### Added
+
+- **«Мои подключения» of the account as a section**: each place of the subscription with «Настроить», «Запустить» and «Остановить». A manual place has its own documents, and its connection is made from all of them in their order; they can be changed only while the place holds no live connection.
+- **The ways to pay in the purchase**: when the service offers more than one, the app asks which, and the choice goes with the invoice.
+
+### Changed
+
+- **Core 0.12.0 (node-v1.5.1)**: p1neappleXpress 0.7.3 merged, the Mail.ru carrier packs up to 500 KB into each chat message (tens of KB/s before, about 800 KB/s per burst now). Wire-compatible with older nodes.
+
 ## [3.4.2] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Fixed
