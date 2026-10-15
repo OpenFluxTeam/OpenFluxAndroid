@@ -5,6 +5,12 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.6.1] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
+
+### Changed
+
+- **«Это устройство» is no longer listed under «Ноды».** The row that made this device a node is hidden from the servers list.
+
 ## [3.6.0] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
 
 ### Added
