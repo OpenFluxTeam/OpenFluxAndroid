@@ -23,6 +23,10 @@
   <a href="https://github.com/OpenFluxTeam/OpenFlux">Core</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxDesktop">Desktop</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxAndroid">Android</a> · <a href="https://testflight.apple.com/join/BwnAcdus">iOS (TestFlight; the App Store release is coming)</a>
 </p>
 
+<p align="center">
+  <img src="docs/images/phones.png" alt="OpenFlux on a phone: Home connected, servers, a node, settings" width="900">
+</p>
+
 ## What it is
 
 [OpenFlux](https://github.com/OpenFluxTeam/OpenFlux) is a network stack research tool: an IPv4 TCP/UDP tunnel with pluggable transports (including a signed JS scripting engine for writing new ones), a batched + zstd codec, and two exit-node backends (L3 raw forward / L4 gVisor proxy).
@@ -75,6 +79,20 @@ apps ──> VpnService TUN  or  SOCKS5 ──> OpenFlux core ──> session of
 - **Core log** with debug levels, readable in the app.
 - **Updates** from GitHub releases, checked against the release's `SHA256SUMS.txt` and installed only when you agree; the APKs are signed with one release key.
 - **Optional account** at openflux.dev for subscriptions; everything above works without one.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/switch.gif" alt="Connecting and disconnecting" width="460">
+</p>
+
+<p align="center">
+  <img src="docs/images/home-states.png" alt="Off, connecting, connected" width="860">
+</p>
+
+<p align="center">
+  <img src="docs/images/desktop-light.png" alt="The same client on the desktop, light theme" width="760">
+</p>
 
 <!-- team:start -->
 ## What is new in the current release

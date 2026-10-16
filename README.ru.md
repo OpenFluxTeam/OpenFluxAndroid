@@ -23,6 +23,10 @@
   <a href="https://github.com/OpenFluxTeam/OpenFlux">Core</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxDesktop">Desktop</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxAndroid">Android</a> · <a href="https://testflight.apple.com/join/BwnAcdus">iOS (TestFlight, скоро в App Store)</a>
 </p>
 
+<p align="center">
+  <img src="docs/images/phones.png" alt="OpenFlux на телефоне: Главная, серверы, нода, настройки" width="900">
+</p>
+
 ## Что это
 
 [OpenFlux](https://github.com/OpenFluxTeam/OpenFlux) — инструмент исследования сетевого стека: туннель IPv4 TCP/UDP с подключаемыми транспортами (включая подписанный JS-движок для написания новых), пакетный кодек с zstd и два бэкенда выходной ноды (L3 — прямая пересылка пакетов, L4 — прокси на gVisor).
@@ -75,6 +79,20 @@ OpenFluxAndroid — его клиент для Android. Ядро собрано 
 - **Журнал ядра** с уровнями отладки, прямо в приложении.
 - **Обновления** из релизов GitHub, со сверкой с `SHA256SUMS.txt` релиза, ставятся только с вашего согласия; APK подписаны одним ключом релизов.
 - **Аккаунт openflux.dev** для подписок — по желанию; всё перечисленное работает и без него.
+
+## Скриншоты
+
+<p align="center">
+  <img src="docs/images/switch.gif" alt="Подключение и отключение" width="460">
+</p>
+
+<p align="center">
+  <img src="docs/images/home-states.png" alt="Выключено, подключение, подключено" width="860">
+</p>
+
+<p align="center">
+  <img src="docs/images/desktop-light.png" alt="Тот же клиент на компьютере, светлая тема" width="760">
+</p>
 
 <!-- team:start -->
 ## Что нового в текущем релизе
