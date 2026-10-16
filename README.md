@@ -8,10 +8,10 @@ transport's check (SmartCaptcha, a login wall) through the built-in browser.
 Current release: **3.8.0**, with the OpenFlux core 0.14.0 (node-v1.7.0) built into
 the APK. Releases are on the
 [releases page](https://github.com/OpenFluxTeam/OpenFluxAndroid/releases); the app
-checks for them itself (Settings → About and updates) and installs one only when
+checks for them itself (Настройки → «О программе») and installs one only when
 you agree.
 
-What the current core gives the app:
+What the current release brings:
 
 - **Direct first.** A `direct` transport (a plain TCP connection to the node)
   is used ahead of the document carriers (Yandex, Mail.ru, cups.online, MAX…)
@@ -20,8 +20,8 @@ What the current core gives the app:
 - **Speed.** Large packets on direct, pooled buffers, compression only where it
   pays, Reno on direct streams. The measurements and the method are in the
   core's `TRANSPORT_PERFORMANCE.md`.
-- **Stripe groups** of several carriers work as one stripe (no screen for them
-  yet; `Lanes = N` in a `.conf`).
+- **Stripe groups** of several carriers work as one stripe. This is a core feature
+  for now (`--lanes N` or `Lanes = N` on a node); the app has no screen for it.
 - **A busy VPN interface no longer stops the VPN.** A full write buffer
   (ENOBUFS) is retried, and only a packet that still does not fit is dropped.
 - **A restarted node is taken over at once**, not after 30 s of silence.

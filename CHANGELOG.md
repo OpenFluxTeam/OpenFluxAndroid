@@ -5,6 +5,15 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.8.1] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.0 / node-v1.7.0 (the same code as 3.8.0; only the core's README changed).
+
+### Changed
+
+- **Settings → About: no link to the fork.** The «Source code» section no longer opens the fork's core page; it links the core's source («Исходный код ядра») and this app.
+- **READMEs** of the core, the shared module, Desktop and Android describe the current release and core (direct first, speed, stripe groups) and link the OpenFluxTeam repositories.
+
 ## [3.8.0] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.0 / node-v1.7.0.
