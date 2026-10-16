@@ -5,6 +5,19 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.0 / node-v1.7.0.
+
+### Added
+
+- **Stripe groups in the core** (p1neappleXpress): several carriers of one type or of mixed types work as one stripe, one lane each. Set up in a `.conf` with `Lanes = N` for now; the app has no screen for it yet.
+- **Reno on direct connections.** While the traffic goes over a plain TCP stream the tunnel opens new connections with Reno instead of CUBIC: a single download is faster (+20 % on the test rig, 6-7 against 3.5-4.5 MB/s over a real path) because nothing is lost inside such a tunnel and CUBIC left slow start too early. Other carriers keep CUBIC.
+
+### Removed
+
+- **The bonding switch** (p1neappleXpress): the core no longer splits a session over all carriers at once; the carriers fail over by priority, as before the switch was turned on. Profiles saved with bonding still open. The network a carrier uses (mobile data, Wi-Fi) stays.
+
 ## [3.7.1] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.13.1 / node-v1.6.1.

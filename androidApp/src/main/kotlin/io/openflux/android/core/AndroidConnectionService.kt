@@ -371,7 +371,6 @@ class AndroidConnectionService(
             "Сети для транспортов: " + kinds.joinToString { it.label + if (it.cli in up) " есть" else " нет" } +
                 if (missing.isEmpty()) "" else ". Транспорты на «$missing» не подключатся, пока сеть не появится",
         )
-        if (current.profile.bonding) log(LogLevel.Info, "Бондинг: транспорты работают одновременно, когда нода согласится")
     }
 
     private fun startCarrier(current: Run): String {
