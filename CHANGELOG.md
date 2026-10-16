@@ -5,6 +5,16 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.0 / node-v1.7.0 (unchanged).
+
+### Changed
+
+- **A new look.** The 2.x palette is back and richer: deep navy, one blue accent that runs into azure on what it fills, soft glows under what matters. Buttons, rows, the chosen place and the switches move on springs; the side column has the logo, a highlight sliding between the places and the connection's card at its foot; the bottom bar puts a pill under the chosen icon. Dark and light themes.
+- **The switch is a small universe.** Home's round button gives way to a scene whose middle is the button. Off, the Moon (NASA LRO imagery) turns on its axis and phones, tablets, laptops and monitors drift round it with dark screens. Connecting, its crust cracks with fire and holds; connected, it burns into the Sun (NASA SDO imagery) with a corona and prominences, the screens wake as its light reaches them, the devices settle into orbits and links with traffic join them to each other and to the Sun, the comets faster as the connection carries more. Disconnected, it plays back; a failure flares red. Opening Home on a running connection shows the Sun at once. The Moon and the Sun are drawn by a shader on Android 13 and later and from pictures on older versions; «Удалить анимацию» in the accessibility settings slows the scene down.
+- **READMEs** with new pictures and an animation of the switch.
+
 ## [3.8.2] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.0 / node-v1.7.0 (unchanged).

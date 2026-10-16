@@ -59,13 +59,11 @@ The connect button is a small universe. While the app is off, the Moon turns slo
 <!-- team:start -->
 ## What is new in the current release
 
-The release **3.8** carries the OpenFlux core 0.14, built into the APK.
+The release **3.9** carries the OpenFlux core 0.14, built into the APK (unchanged since 3.8).
 
-- **Direct first.** A `direct` transport (a plain TCP connection to the node) is used ahead of the document transports while it is alive, and the documents stay as the reserve. A new `direct` transport in a profile starts at priority 110.
-- **Speed.** Large packets on direct, pooled buffers, compression only where it pays, Reno on direct streams. The method and the numbers are in the core's [TRANSPORT_PERFORMANCE.md](https://github.com/OpenFluxTeam/OpenFlux/blob/main/TRANSPORT_PERFORMANCE.md) (in Russian).
-- **A busy VPN interface no longer stops the VPN.** A full write buffer (ENOBUFS) is retried, and only a packet that still does not fit is dropped.
-- **Stripe groups.** Several carriers of one or mixed types can work as one stripe. This is a core feature for now (`--lanes N` or `Lanes = N` on a node); the app has no screen for it yet.
-- **A restarted node is taken over at once**, not after 30 seconds of silence.
+- **A new look.** The 2.x palette is back and richer: deep navy, one blue accent with soft light, motion on every control, a pill under the chosen place in the bottom bar.
+- **The switch.** Home's button is the Moon that burns into the Sun, with the devices round it waking and joining the network: see [The switch](#the-switch). Android 13 and later draw it with a shader; older versions from pictures.
+- From 3.8: **direct first** (a plain TCP connection to the node ahead of the documents while it is alive), **speed** work (large packets, pooled buffers, Reno on direct streams), **stripe groups** in the core, and **a restarted node is taken over at once**.
 
 The full list is in [CHANGELOG.md](CHANGELOG.md).
 <!-- team:end -->
