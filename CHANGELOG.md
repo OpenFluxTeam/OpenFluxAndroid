@@ -5,6 +5,22 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.13.0 / node-v1.6.0 (the speed work, see TRANSPORT_PERFORMANCE.md in the core).
+
+### Changed
+
+- **A live direct connection is used first.** Profiles ranked direct below the document carriers, so the traffic went through a third party while a straight path worked. The core now sends over a live direct whatever the profile says, falls back to the next carrier when it stops answering and returns when it comes back. A direct transport added to a profile starts at priority 110. A node must be updated too (node-v1.6.0) for the node-to-device direction.
+- **Much faster direct connections**: about 1.7 times the download speed and twice the parallel download speed over a real path, the CPU of the node and of the device per megabyte cut by three to seven times (large packets on direct, fewer copies, no compression of what does not compress).
+
+### Fixed
+
+- **Screens no longer show through each other when you go back or forward** (the stock cross-fade drew both at half strength, their texts on top of each other); a screen now slides a little and fades, on an opaque page.
+- The icons in a transport's header (remove, open) are on one line.
+- **A full VPN interface queue no longer ends the tunnel.** Writing a packet to the interface failed with ENOBUFS under load and the whole VPN stopped ("Запись в VPN-интерфейс: write failed: ENOBUFS"). The write now waits a moment and drops the packet after a few tries, as a busy network card would; TCP sends it again.
+- Telemost's idle frames no longer fill the journal with «the peer sends classic-mode frames».
+
 ## [3.6.3] - 2026-10-15 (OpenFluxTeam/OpenFluxAndroid)
 
 3.6.2 was not published: its build stopped on a test that still expected the old rule. Its fixes ship here.
