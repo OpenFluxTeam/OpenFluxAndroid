@@ -24,15 +24,28 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/phones.png" alt="OpenFlux on a phone: connect, servers, a node's transports, this device as a node" width="900">
+  <img src="docs/images/phones.png" alt="OpenFlux on a phone: Home connected, servers, a node's transports, settings" width="900">
 </p>
 
 ## What it is
 
 OpenFluxAndroid is the Android app of [OpenFlux](https://github.com/OpenFluxTeam/OpenFlux). The core is built into the APK and runs inside the app. Traffic goes through a **transport**: a document on a web service (Yandex, Mail.ru, cups.online, Avito, Telemost, MAX) or a plain TCP connection to your own node. A profile can hold several transports; the app switches between them by priority when one stops working.
 
+## The switch
+
+<p align="center">
+  <img src="docs/images/switch.gif" alt="The switch: the Moon cracks with fire and burns into the Sun, the devices wake and connect, then it all goes back" width="460">
+</p>
+
+The connect button is a small universe. While the app is off, the Moon turns slowly in the middle and phones, tablets, laptops and monitors drift round it with their screens dark. Press it: while the connection is being set up, the Moon's crust cracks with fire; once it is up, the Moon burns into the Sun, the screens light up as its light reaches them, the devices settle into orbits, and links of light join them to each other and to the Sun, with traffic running along them, faster when the connection carries more. Disconnect and it all plays back; a failed connection flares red. The Moon and the Sun are real: NASA's LRO map of the Moon and the Sun's surface seen by the Solar Dynamics Observatory, drawn by a shader on the GPU.
+
+<p align="center">
+  <img src="docs/images/home-states.png" alt="Home: off, connecting, connected" width="860">
+</p>
+
 ## Features
 
+- **A new look.** Deep navy and one blue accent, as in 2.x, with soft light and motion everywhere; dark and light themes.
 - **A system VPN or a local SOCKS5 proxy.** The VPN carries the whole phone; the proxy is for apps you point at it yourself.
 - **Several transports in one profile**, each with a priority and the network it may use (mobile data, Wi-Fi). When the best one fails, the next takes over.
 - **Encryption.** AES-256-GCM end to end with a key you set; a profile with a key hides the traffic from the service that carries it.
