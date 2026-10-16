@@ -5,8 +5,8 @@
 <h1 align="center">OpenFluxAndroid</h1>
 
 <p align="center">
-  The OpenFlux client for Android.<br>
-  A tunnel that rides on ordinary web services, with automatic failover between them.
+  The Android client of OpenFlux, a network stack research tool.<br>
+  An IPv4 TCP/UDP tunnel over pluggable transports, with end-to-end encryption, failover and your own exit nodes.
 </p>
 
 <p align="center">
@@ -23,47 +23,68 @@
   <a href="https://github.com/OpenFluxTeam/OpenFlux">Core</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxDesktop">Desktop</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxAndroid">Android</a> · <a href="https://testflight.apple.com/join/BwnAcdus">iOS (TestFlight; the App Store release is coming)</a>
 </p>
 
-<p align="center">
-  <img src="docs/images/phones.png" alt="OpenFlux on a phone: Home connected, servers, a node's transports, settings" width="900">
-</p>
-
 ## What it is
 
-OpenFluxAndroid is the Android app of [OpenFlux](https://github.com/OpenFluxTeam/OpenFlux). The core is built into the APK and runs inside the app. Traffic goes through a **transport**: a document on a web service (Yandex, Mail.ru, cups.online, Avito, Telemost, MAX) or a plain TCP connection to your own node. A profile can hold several transports; the app switches between them by priority when one stops working.
+[OpenFlux](https://github.com/OpenFluxTeam/OpenFlux) is a network stack research tool: an IPv4 TCP/UDP tunnel with pluggable transports (including a signed JS scripting engine for writing new ones), a batched + zstd codec, and two exit-node backends (L3 raw forward / L4 gVisor proxy).
 
-## The switch
+OpenFluxAndroid is its Android client. The core is compiled into the APK through the gomobile bridge (`mobile/`) and runs inside the app's VPN service; the app manages profiles, transports, keys and exit nodes.
 
-<p align="center">
-  <img src="docs/images/switch.gif" alt="The switch: the Moon cracks with fire and burns into the Sun, the devices wake and connect, then it all goes back" width="460">
-</p>
+```
+apps ──> VpnService TUN  or  SOCKS5 ──> OpenFlux core ──> session of transports ──> exit node ──> Internet
+                                        (in the APK)      priorities, failover       --mode l4 | l3
+```
 
-The connect button is a small universe. While the app is off, the Moon turns slowly in the middle and phones, tablets, laptops and monitors drift round it with their screens dark. Press it: while the connection is being set up, the Moon's crust cracks with fire; once it is up, the Moon burns into the Sun, the screens light up as its light reaches them, the devices settle into orbits, and links of light join them to each other and to the Sun, with traffic running along them, faster when the connection carries more. Disconnect and it all plays back; a failed connection flares red. The Moon and the Sun are real: NASA's LRO map of the Moon and the Sun's surface seen by the Solar Dynamics Observatory, drawn by a shader on the GPU.
+## Capabilities
 
-<p align="center">
-  <img src="docs/images/home-states.png" alt="Home: off, connecting, connected" width="860">
-</p>
+### Tunnel
 
-## Features
+- **System VPN** through Android's `VpnService`: the whole device goes through the tunnel; the app's own traffic is kept out of it.
+- **Proxy mode**: a local SOCKS5 proxy for the apps you point at it.
+- **IPv4 TCP and UDP**; through an L3 exit, whole IP packets including ICMP.
+- **Quick-settings tile** to connect and disconnect without opening the app.
 
-- **A new look.** Deep navy and one blue accent, as in 2.x, with soft light and motion everywhere; dark and light themes.
-- **A system VPN or a local SOCKS5 proxy.** The VPN carries the whole phone; the proxy is for apps you point at it yourself.
-- **Several transports in one profile**, each with a priority and the network it may use (mobile data, Wi-Fi). When the best one fails, the next takes over.
-- **Encryption.** AES-256-GCM end to end with a key you set; a profile with a key hides the traffic from the service that carries it.
-- **A node in a few taps.** The wizard installs an exit node on your server over SSH, or sets one up on ordinary PHP hosting with no server at all. The node updates itself and rolls back if an update does not start.
-- **Share by link or QR.** An `openflux://` link carries a whole profile; the camera scans it back in.
-- **A built-in browser** for the checks some services ask for (SmartCaptcha, a login wall).
-- **This phone as a node**, so other devices can connect through it.
-- **A quick-settings tile** to connect and disconnect without opening the app.
-- **Updates from GitHub releases**, checked against the release's `SHA256SUMS.txt`, installed only when you agree.
+### Transports and sessions
+
+- **Native transports** of the core: Yandex Docs, Yandex Volga, Yandex Board, Mail.ru, cups.online, Telemost, Avito, MAX/OneMe, and `direct` — a plain TCP connection to your node.
+- **JS transports**: signed packages for the core's scripting engine, installed from the bundle, from GitHub or by a link. The core checks each package's signature; the app shows its parameters and sends the package to your nodes.
+- **Multi-transport sessions**: a profile holds several transports, each with a priority and the networks it may use (mobile data, Wi-Fi). Negotiation is authenticated; when the active carrier stalls, the session moves to the next one without tearing the tunnel down.
+- **Direct first**: while `direct` to the node is alive it carries the traffic ahead of the document carriers, with a 16000-byte tunnel MTU, pooled buffers and Reno congestion control on its streams.
+- **Stripe groups**: several carriers of one or mixed types work as one stripe, one lane each.
+- **Codec** per profile: batched + zstd, or the legacy per-packet LZ4 codec for old nodes.
+
+### Encryption
+
+- **AES-256-GCM end to end** between the phone and the exit node, with a key per channel. With a key, the service that carries the documents sees only ciphertext.
+- The wizard generates node keys; they travel inside the profile link and are not sent anywhere else.
+
+### Exit nodes
+
+- **Node wizard over SSH**, right from the phone: installs the core's exit node on a server (Linux amd64, arm64, armv7) and sets its backend and transports:
+  - **L4** — a userspace gVisor TCP/IP stack that terminates connections and opens new ones; needs no root and runs anywhere;
+  - **L3** — raw forwarding of IP packets with SNAT/DNAT, one connection end to end; needs root and iptables.
+- **Verification**: after setup the app connects through the new node and checks that the exit address is the server's.
+- **A server's channels**: list them, change their transports (the key, port and context stay), share or delete them, add new ones.
+- **No server at all**: the exit can be a small PHP program on ordinary web hosting.
+- **Self-updating nodes**: a node fetches new releases, checks them against `SHA256SUMS`, and rolls back if the new build does not start.
+- **This phone as an exit**: other devices can connect through it.
+
+### Also
+
+- **`openflux://` links and QR codes** carry a whole profile: transports, priorities, key, codec; the camera scans them in.
+- **Built-in browser** (WebView) for the checks some services ask for, such as SmartCaptcha or a login wall.
+- **Core log** with debug levels, readable in the app.
+- **Updates** from GitHub releases, checked against the release's `SHA256SUMS.txt` and installed only when you agree; the APKs are signed with one release key.
+- **Optional account** at openflux.dev for subscriptions; everything above works without one.
 
 <!-- team:start -->
 ## What is new in the current release
 
-The release **3.9** carries the OpenFlux core 0.14, built into the APK (unchanged since 3.8).
+The release **3.9** carries the OpenFlux core 0.14.0 (exit node `node-v1.7.0`), built into the APK.
 
-- **A new look.** The 2.x palette is back and richer: deep navy, one blue accent with soft light, motion on every control, a pill under the chosen place in the bottom bar.
-- **The switch.** Home's button is the Moon that burns into the Sun, with the devices round it waking and joining the network: see [The switch](#the-switch). Android 13 and later draw it with a shader; older versions from pictures.
-- From 3.8: **direct first** (a plain TCP connection to the node ahead of the documents while it is alive), **speed** work (large packets, pooled buffers, Reno on direct streams), **stripe groups** in the core, and **a restarted node is taken over at once**.
+- **Direct first**: a plain TCP connection to the node is used ahead of the document carriers while it is alive.
+- **Speed**: a 16000-byte tunnel MTU on direct with a fallback on ICMP "fragmentation needed", pooled send buffers, gated zstd (never over TLS on direct), Reno on direct streams.
+- **Stripe groups** in the core instead of the old bonding.
+- **A restarted node is taken over at once**: a restarted exit answers a client that is mid-session.
 
 The full list is in [CHANGELOG.md](CHANGELOG.md).
 <!-- team:end -->
@@ -88,21 +109,17 @@ Already cloned without `--recurse-submodules`? Run `git submodule update --init 
 ## Structure
 
 ```
-androidApp/   VPN service, the WebView check flow, the camera (QR), settings
-shared/       Submodule: models, service interfaces, design system, screens
+androidApp/   VPN service and the core bridge, quick-settings tile, the WebView check flow, the camera (QR)
+shared/       Submodule: models, sessions, transports' settings, node wizard, screens
 OpenFlux/     Submodule: the core (CLI and the mobile/ gomobile bridge)
 scripts/      build-android-core.sh
 ```
 
-The same screens run on the desktop in [OpenFluxDesktop](https://github.com/OpenFluxTeam/OpenFluxDesktop); both use the module [OpenFluxClientShared](https://github.com/OpenFluxTeam/OpenFluxClientShared).
-
-<p align="center">
-  <img src="docs/images/desktop-light.png" alt="The same interface on the desktop, light theme" width="760">
-</p>
+The desktop client is [OpenFluxDesktop](https://github.com/OpenFluxTeam/OpenFluxDesktop); both use the module [OpenFluxClientShared](https://github.com/OpenFluxTeam/OpenFluxClientShared).
 
 ## Credits
 
-- **[meepo161](https://github.com/meepo161)** — author of [OpenFluxClient](https://github.com/meepo161/OpenFluxClient), the source of this app's UI and logic (`androidApp/`, `shared/`): multi-transport sessions with failover, encryption, the in-app check flow, the node wizard and the Compose design system. Thank you!
+- **[meepo161](https://github.com/meepo161)** — author of [OpenFluxClient](https://github.com/meepo161/OpenFluxClient), the source of this app's logic (`androidApp/`, `shared/`): multi-transport sessions with failover, encryption, the in-app check flow, the node wizard. Thank you!
 - **[p1neappleXpress](https://github.com/p1neappleXpress)** — author of the [OpenFlux](https://github.com/p1neappleXpress/OpenFlux) core this app embeds: the tunnel, the transports and the negotiation protocol.
 
 The previous, simpler single-transport app that lived in this repository is kept at the [`legacy-native-app`](../../tree/legacy-native-app) tag.
