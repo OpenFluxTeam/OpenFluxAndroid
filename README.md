@@ -1,11 +1,30 @@
 # OpenFluxAndroid
 
-> **Fork meepo161.** Releases, the update check, the core submodule and the node wizard's core point at [meepo161/OpenFlux](https://github.com/meepo161/OpenFlux). The core is built into the APK; the node wizard can install the fork's or the original [p1neappleXpress/OpenFlux](https://github.com/p1neappleXpress/OpenFlux) core on a server.
-
-Android client for [OpenFlux](https://github.com/meepo161/OpenFlux):
+Android client for [OpenFlux](https://github.com/OpenFluxTeam/OpenFlux):
 system VPN or local SOCKS5, multi-transport sessions with automatic
 failover, AES-256-GCM encryption, and the in-app flow for passing a
 transport's check (SmartCaptcha, a login wall) through the built-in browser.
+
+Current release: **3.8.0**, with the OpenFlux core 0.14.0 (node-v1.7.0) built into
+the APK. Releases are on the
+[releases page](https://github.com/OpenFluxTeam/OpenFluxAndroid/releases); the app
+checks for them itself (Settings → About and updates) and installs one only when
+you agree.
+
+What the current core gives the app:
+
+- **Direct first.** A `direct` transport (a plain TCP connection to the node)
+  is used ahead of the document carriers (Yandex, Mail.ru, cups.online, MAX…)
+  while it is alive, and the document carriers stay as the reserve. A new
+  `direct` transport in a profile starts at priority 110.
+- **Speed.** Large packets on direct, pooled buffers, compression only where it
+  pays, Reno on direct streams. The measurements and the method are in the
+  core's `TRANSPORT_PERFORMANCE.md`.
+- **Stripe groups** of several carriers work as one stripe (no screen for them
+  yet; `Lanes = N` in a `.conf`).
+- **A busy VPN interface no longer stops the VPN.** A full write buffer
+  (ENOBUFS) is retried, and only a packet that still does not fit is dropped.
+- **A restarted node is taken over at once**, not after 30 s of silence.
 
 This repository's app code and UI (the `androidApp/` and `shared/` modules)
 come from [meepo161/OpenFluxClient](https://github.com/meepo161/OpenFluxClient),
@@ -18,7 +37,7 @@ tag.
 ## Getting the code
 
 ```bash
-git clone --recurse-submodules https://github.com/meepo161/OpenFluxAndroid.git
+git clone --recurse-submodules https://github.com/OpenFluxTeam/OpenFluxAndroid.git
 ```
 
 Already cloned without `--recurse-submodules`?
@@ -29,10 +48,10 @@ git submodule update --init --recursive
 
 This checks out two submodules:
 
-- `shared/` → [OpenFluxClientShared](https://github.com/meepo161/OpenFluxClientShared),
+- `shared/` → [OpenFluxClientShared](https://github.com/OpenFluxTeam/OpenFluxClientShared),
   the Compose Multiplatform UI and models shared with
-  [OpenFluxDesktop](https://github.com/meepo161/OpenFluxDesktop).
-- `OpenFlux/` → [OpenFlux](https://github.com/meepo161/OpenFlux), the
+  [OpenFluxDesktop](https://github.com/OpenFluxTeam/OpenFluxDesktop).
+- `OpenFlux/` → [OpenFlux](https://github.com/OpenFluxTeam/OpenFlux), the
   core this app embeds as a library (gomobile).
 
 ## Building
@@ -48,7 +67,8 @@ scripts/build-android-core.sh          # builds androidApp/libs/openflux.aar
 
 `scripts/build-android-core.sh` also accepts an explicit path
 (`scripts/build-android-core.sh ../OpenFlux`) if you'd rather build against a
-separate checkout than the submodule.
+separate checkout than the submodule. Rebuild the AAR after the core's Go API
+or the `OpenFlux/` submodule changes.
 
 ## Structure
 
