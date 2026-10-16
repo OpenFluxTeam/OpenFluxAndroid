@@ -5,6 +5,14 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.7.1] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.13.1 / node-v1.6.1.
+
+### Fixed
+
+- **A restarted node is taken over at once.** After a node restarted (an update, a crash) the app waited 30 seconds of silence to notice («exit silent on every carrier for 30s: handshaking again»), and did not notice at all when the connection was younger than ten seconds. The node now tells the app it has no session, and the connection comes back in a few seconds. Nodes need node-v1.6.1.
+
 ## [3.7.0] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.13.0 / node-v1.6.0 (the speed work, see TRANSPORT_PERFORMANCE.md in the core).
