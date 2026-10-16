@@ -5,6 +5,14 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.8.2] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.0 / node-v1.7.0 (unchanged).
+
+### Changed
+
+- **One core, no fork / original choice.** Settings → Core (desktop) offers «Встроенное», «Выпуск с GitHub» and «Свой файл»; the release comes from OpenFluxTeam/OpenFlux. The node wizard's «Ядро на сервере» switch is gone: a node always gets that core. Settings saved with «Форк» or «Оригинал» become «Выпуск с GitHub»; a core downloaded earlier as «Форк» keeps working until the next download; one downloaded as «Оригинал» is downloaded again.
+
 ## [3.8.1] - 2026-10-16 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.0 / node-v1.7.0 (the same code as 3.8.0; only the core's README changed).
