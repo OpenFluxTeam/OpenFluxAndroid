@@ -237,7 +237,7 @@ class AndroidPlatformServices(
 
     private companion object {
         const val MAX_FETCH_BYTES = 4 * 1024 * 1024
-        const val RELEASE_REPO = "meepo161/OpenFluxAndroid"
+        const val RELEASE_REPO = "p1neappleXpress/OpenFluxAndroid"
         const val TAG_PREFIX = "v"
         /** Nightly test builds are tagged nightly-<date>-<commit>, as prereleases. */
         const val NIGHTLY_PREFIX = "nightly-"
