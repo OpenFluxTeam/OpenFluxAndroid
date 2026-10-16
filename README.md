@@ -20,6 +20,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/OpenFluxTeam/OpenFlux">Core</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxDesktop">Desktop</a> · <a href="https://github.com/OpenFluxTeam/OpenFluxAndroid">Android</a> · <a href="https://testflight.apple.com/join/BwnAcdus">iOS (TestFlight; the App Store release is coming)</a>
+</p>
+
+<p align="center">
   <img src="docs/images/phones.png" alt="OpenFlux on a phone: connect, servers, a node's transports, this device as a node" width="900">
 </p>
 
