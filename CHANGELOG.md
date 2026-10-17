@@ -5,6 +5,24 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.9.2] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.2 / node-v1.7.2.
+
+### Fixed
+
+- **Mail.ru nodes open their document again.** Mail.ru no longer opens a public document for an anonymous visitor, so a
+  node with a Mail.ru document sat in «cannot open the document» for ever. The core (0.14.2) opens it with the
+  Mail.ru sign-in saved in Settings → Сервисы, and the node wizard now sends that sign-in to the node along with its
+  Mail.ru document (a node already on a server: «Передать вход Mail.ru ноде» in the node's menu). The document the app makes
+  is checked signed in, as the node will open it.
+
+### Added
+
+- **Запомнить пароль.** A server's password can be kept in the system's secret store (Windows DPAPI, macOS Keychain,
+  Linux Secret Service, Android Keystore); the app then connects to the server on its own and forgets the password if the
+  server rejects it.
+
 ## [3.9.1] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.1 / node-v1.7.1.
