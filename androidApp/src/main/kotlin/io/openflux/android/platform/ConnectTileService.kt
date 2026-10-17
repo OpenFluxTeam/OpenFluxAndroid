@@ -54,7 +54,7 @@ class ConnectTileService : TileService() {
         val tile = qsTile ?: return
         tile.label = "OpenFlux"
         tile.state = if (state.isActive) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.icon = Icon.createWithResource(this, R.drawable.ic_power)
+        tile.icon = Icon.createWithResource(this, R.drawable.ic_openflux_notification)
         if (Build.VERSION.SDK_INT >= 29) {
             tile.subtitle = when (state) {
                 is ConnectionState.Connected -> profileName ?: "Подключено"
