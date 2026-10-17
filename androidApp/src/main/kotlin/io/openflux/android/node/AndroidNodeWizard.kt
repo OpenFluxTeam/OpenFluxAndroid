@@ -118,6 +118,13 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
         return json.decodeFromJsonElement(InstalledChannel.serializer(), reply.getValue("channel"))
     }
 
+    override suspend fun pushSignIn(channel: String, transports: List<NodeTransport>, sudoPassword: String, cookieHeader: String): InstalledChannel {
+        val reply = call("nodePushSignIn", "channel=$channel ${transports.names()}") {
+            Mobile.nodePushSignIn(channel, transports.json(), cookieHeader, sudoPassword)
+        }
+        return json.decodeFromJsonElement(InstalledChannel.serializer(), reply.getValue("channel"))
+    }
+
     override suspend fun channelShareLink(name: String, key: String, host: String, port: Int, transports: List<NodeTransport>, context: String): String =
         withContext(Dispatchers.IO) {
             log(LogLevel.Debug, "мастер: → nodeShareLinkContext $host:$port ${transports.names()}")
