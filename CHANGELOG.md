@@ -5,6 +5,23 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.9.4] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.3 / node-v1.7.2 (the installer script is new, the node binary is not).
+
+### Fixed
+
+- **A new node with Mail.ru alone can be installed.** The installer on the server refused the Mail.ru sign-in for a channel
+  without a Yandex document («вход в Яндекс нужен только каналу с документом Яндекса»).
+- **Mail.ru opens on the device with its own sign-in.** Cloud no longer opens a public document for an anonymous visitor, so
+  the app now gives its Mail.ru carrier the sign-in saved in Settings → Сервисы, as it does for Yandex. «Передать вход Mail.ru
+  ноде» also checks that the saved sign-in is a real one before it is sent.
+
+### Security
+
+- **An exit no longer hands its Mail.ru sign-in to a client** that asks it for cookies, and a sign-in sent by the wizard goes
+  only to the document of its own service (Yandex or Mail.ru).
+
 ## [3.9.3] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.2 / node-v1.7.2 (unchanged).
