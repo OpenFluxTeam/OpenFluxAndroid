@@ -5,6 +5,21 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.9.3] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.2 / node-v1.7.2 (unchanged).
+
+### Fixed
+
+- **The app no longer closes on Android 12 and older.** The check for updates, the subscription and the bot read their answers
+  with a call that Android only has from version 13 (`InputStream.readNBytes`), so on Android 12 the app ended a few
+  seconds after it opened.
+
+### Changed
+
+- **The quick-settings tile shows the picture of the connection:** the Moon with craters while the tunnel is off, the OpenFlux
+  mark while it connects, the Sun when it is on.
+
 ## [3.9.2] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.2 / node-v1.7.2.
