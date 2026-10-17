@@ -54,7 +54,15 @@ class ConnectTileService : TileService() {
         val tile = qsTile ?: return
         tile.label = "OpenFlux"
         tile.state = if (state.isActive) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.icon = Icon.createWithResource(this, R.drawable.ic_openflux_notification)
+        // The Moon while the tunnel is off, the Sun while it is on, the logo in between (like Home's switch).
+        tile.icon = Icon.createWithResource(
+            this,
+            when (state) {
+                is ConnectionState.Connected -> R.drawable.ic_tile_sun
+                ConnectionState.Idle, is ConnectionState.Failed -> R.drawable.ic_tile_moon
+                else -> R.drawable.ic_tile_logo
+            },
+        )
         if (Build.VERSION.SDK_INT >= 29) {
             tile.subtitle = when (state) {
                 is ConnectionState.Connected -> profileName ?: "Подключено"
