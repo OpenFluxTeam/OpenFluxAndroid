@@ -5,6 +5,20 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.9.1] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.1 / node-v1.7.1.
+
+### Added
+
+- **«Обновить ноды».** On a server's screen, under its nodes: moves every node on the server to the core this app comes with
+  and restarts the running ones, then reads the server again (tunnels through them drop for a few seconds).
+
+### Fixed
+
+- **Avito connects again.** Avito began refusing the old browser User-Agent with 403, so Avito nodes and Avito profiles sat
+  in a reconnect loop; the core (0.14.1) sends a current one. Nodes made earlier need «Обновить ноды» to get the fix.
+
 ## [3.9.0] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.0 / node-v1.7.0 (unchanged).

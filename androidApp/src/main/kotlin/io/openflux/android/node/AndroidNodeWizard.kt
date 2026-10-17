@@ -13,6 +13,7 @@ import io.openflux.desktop.model.NodeDocuments
 import io.openflux.desktop.model.NodeMode
 import io.openflux.desktop.model.NodePlan
 import io.openflux.desktop.model.NodeTransport
+import io.openflux.desktop.model.NodeUpgrade
 import io.openflux.desktop.model.NodeWizardException
 import io.openflux.desktop.model.ServerProbe
 import io.openflux.desktop.model.SshTarget
@@ -98,6 +99,11 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
 
     override suspend fun remove(channel: String, sudoPassword: String) {
         call("nodeRemove", "channel=$channel") { Mobile.nodeRemove(channel, sudoPassword) }
+    }
+
+    override suspend fun upgrade(sudoPassword: String): NodeUpgrade {
+        val reply = call("nodeUpgrade") { Mobile.nodeUpgrade(sudoPassword) }
+        return json.decodeFromJsonElement(NodeUpgrade.serializer(), reply)
     }
 
     override suspend fun showChannel(channel: String, sudoPassword: String): InstalledChannel {
