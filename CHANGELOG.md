@@ -5,6 +5,25 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.9.5] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.4 / node-v1.7.3.
+
+### Added
+
+- **The app keeps its nodes signed in.** While it runs, the app gives the Yandex or Mail.ru sign-in saved in Settings → Сервисы
+  to the nodes it set up, over the server access it already has (no restart of the node, and only that service's document):
+  when the account's sign-in changed or the node says it is signed out; a node that keeps refusing it tells you to sign in
+  again. The node itself now keeps the cookies a service refreshes, which used to be lost at every restart.
+
+### Fixed
+
+- **Mail.ru carrier on one account.** A client and a node signed in to the same Mail.ru account took each other's frames for
+  their own echo, so the connection never came up; the echo is now told by the connection's own id.
+- **Avito stops hammering its own limit.** Avito answers a handshake it has too many of from one address with 429; the carrier
+  now spaces its dials and, after a 429, waits for a pause that doubles, instead of retrying every second (which kept a
+  node's rooms at 1-4 of 8).
+
 ## [3.9.4] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.3 / node-v1.7.2 (the installer script is new, the node binary is not).
