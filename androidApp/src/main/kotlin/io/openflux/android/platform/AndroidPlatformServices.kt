@@ -165,6 +165,12 @@ class AndroidPlatformServices(
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
+    private val secrets by lazy { AndroidSecretStore(context) }
+    override val secretStoreSupported: Boolean = true
+    override fun loadSecret(key: String): String? = secrets.load(key)
+    override fun saveSecret(key: String, value: String): Boolean = secrets.save(key, value)
+    override fun deleteSecret(key: String) = secrets.delete(key)
+
     override fun now(): Long = System.currentTimeMillis()
 
     override suspend fun newCupsRooms(): String = CupsRooms.create()
