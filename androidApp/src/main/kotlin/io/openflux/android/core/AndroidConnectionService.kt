@@ -760,6 +760,16 @@ class AndroidConnectionService(
         CoreService.cancelCaptcha(context)
     }
 
+    override fun consumeNodeParams(): Pair<String, Map<String, String>>? {
+        val raw = Mobile.pendingNodeParams().takeIf { it.isNotEmpty() } ?: return null
+        return try {
+            val obj = org.json.JSONObject(raw)
+            val name = obj.getString("transport")
+            val params = obj.getJSONObject("params")
+            name to buildMap { params.keys().forEach { put(it, params.getString(it)) } }
+        } catch (_: Exception) { null }
+    }
+
     // ---- logs ----
 
     override fun clearLogs() {
