@@ -17,7 +17,7 @@ import io.openflux.android.openFlux
 import io.openflux.android.web.WebPage
 import io.openflux.bridge.mobile.Mobile
 import io.openflux.desktop.model.AppSettings
-import io.openflux.desktop.model.CaptchaPrompt
+import io.openflux.desktop.model.TransportPrompt
 import io.openflux.desktop.model.ConnectionMode
 import io.openflux.desktop.model.ConnectionNarrative
 import io.openflux.desktop.model.ConnectionState
@@ -85,14 +85,14 @@ class AndroidConnectionService(
     override val exitAddress: StateFlow<ExitAddress> = _exitAddress.asStateFlow()
     private val _logs = MutableStateFlow<List<LogLine>>(emptyList())
     override val logs: StateFlow<List<LogLine>> = _logs.asStateFlow()
-    private val _captcha = MutableStateFlow<CaptchaPrompt?>(null)
-    override val captcha: StateFlow<CaptchaPrompt?> = _captcha.asStateFlow()
+    private val _prompt = MutableStateFlow<TransportPrompt?>(null)
+    override val prompt: StateFlow<TransportPrompt?> = _prompt.asStateFlow()
     private val _exitShareLink = MutableStateFlow<String?>(null)
     override val exitShareLink: StateFlow<String?> = _exitShareLink.asStateFlow()
     private val _socksAddress = MutableStateFlow<String?>(null)
     override val socksAddress: StateFlow<String?> = _socksAddress.asStateFlow()
-    private val _captchaPage = MutableStateFlow<BrowserPage?>(null)
-    override val captchaPage: StateFlow<BrowserPage?> = _captchaPage.asStateFlow()
+    private val _promptPage = MutableStateFlow<BrowserPage?>(null)
+    override val promptPage: StateFlow<BrowserPage?> = _promptPage.asStateFlow()
 
     private val lineIds = AtomicLong()
 
@@ -121,10 +121,10 @@ class AndroidConnectionService(
     @Volatile private var pending: Run? = null
 
     /** The core's pending check shown now, and how the user left it. */
-    @Volatile private var captchaUrl: String? = null
-    @Volatile private var captchaSolved = false
+    @Volatile private var promptUrl: String? = null
+    @Volatile private var promptSolved = false
     /** "Позже": checks for a Yandex page stay quiet until then (the other transports carry on); a new connection resets it. */
-    @Volatile private var captchaSnoozedUntil = 0L
+    @Volatile private var promptSnoozedUntil = 0L
 
     private val cookieStore get() = File(context.filesDir, "transport-cookies.json")
 
@@ -171,7 +171,7 @@ class AndroidConnectionService(
     // ---- connect / disconnect ----
 
     override fun connect(profile: Profile, mode: ConnectionMode?) {
-        captchaSnoozedUntil = 0
+        promptSnoozedUntil = 0
         scope.launch {
             lifecycle.withLock {
                 run?.let { stop(it, restart = true) }
@@ -189,7 +189,7 @@ class AndroidConnectionService(
         _exitShareLink.value = null
         _exitAddress.value = ExitAddress.Unknown
         _traffic.value = TrafficStats()
-        clearCaptcha()
+        clearPrompt()
         profile.problems().firstOrNull()?.let {
             fail(profile, it)
             return
@@ -266,7 +266,7 @@ class AndroidConnectionService(
         _exitAddress.value = ExitAddress.Unknown
         _exitShareLink.value = null
         _traffic.value = TrafficStats()
-        clearCaptcha()
+        clearPrompt()
     }
 
     /** Ends [current] with [message], unless it was replaced or stopped meanwhile. */
@@ -317,7 +317,7 @@ class AndroidConnectionService(
 
     /** Back on screen: a check that waited in a notification shows in the app. */
     fun onAppVisible() {
-        CoreService.cancelCaptcha(context)
+        CoreService.cancelPrompt(context)
     }
 
     private fun launch(current: Run, host: CoreService) {
@@ -339,7 +339,7 @@ class AndroidConnectionService(
         var error = startCarrier(current)
         // Some transports (Volga) fail Start outright on a Yandex check; a
         // retry replays the cookies the user got.
-        while (error.isNotEmpty() && !current.stopping && awaitCaptcha(current)) error = startCarrier(current)
+        while (error.isNotEmpty() && !current.stopping && awaitPrompt(current)) error = startCarrier(current)
         if (current.stopping) return
         if (error.isNotEmpty()) {
             failRun(current, error)
@@ -414,16 +414,16 @@ class AndroidConnectionService(
         while (!current.stopping && !Mobile.isConnected()) {
             // Only the phone's own checks hold connecting up; the node's are
             // passed once the tunnel runs.
-            if (Mobile.pendingCaptchaURL().isNotEmpty() && Mobile.pendingCaptchaProxy().isEmpty() &&
-                System.currentTimeMillis() >= captchaSnoozedUntil
+            if (Mobile.pendingPromptURL().isNotEmpty() && Mobile.pendingPromptProxy().isEmpty() &&
+                System.currentTimeMillis() >= promptSnoozedUntil
             ) {
-                if (awaitCaptcha(current)) {
+                if (awaitPrompt(current)) {
                     waited = 0
                     continue
                 }
                 if (current.stopping) return
                 // "Позже": the other transports may still bring the connection up; only the wait for them runs out.
-                if (System.currentTimeMillis() >= captchaSnoozedUntil) {
+                if (System.currentTimeMillis() >= promptSnoozedUntil) {
                     failRun(current, "Проверка Яндекса не пройдена")
                     return
                 }
@@ -478,7 +478,7 @@ class AndroidConnectionService(
         var lastNotification = ""
         while (!current.stopping) {
             drainLogs(current)
-            checkCaptcha()
+            checkPrompt()
             if (current.started) {
                 val up: Boolean
                 val totalUp: Long
@@ -618,26 +618,26 @@ class AndroidConnectionService(
     // ---- Yandex checks / script setup pages ----
 
     /** Shows a check (or a script's own setup page) the core just asked for; forgets one it no longer waits on. */
-    private fun checkCaptcha() {
-        val url = Mobile.pendingCaptchaURL().orEmpty()
-        val html = Mobile.pendingCaptchaHTML().orEmpty()
+    private fun checkPrompt() {
+        val url = Mobile.pendingPromptURL().orEmpty()
+        val html = Mobile.pendingPromptHTML().orEmpty()
         // The core says which pages are the script's own (inline html or its own loopback server).
-        val own = Mobile.pendingCaptchaOwn() || html.isNotEmpty()
+        val own = Mobile.pendingPromptOwn() || html.isNotEmpty()
         if (url.isEmpty() && html.isEmpty()) {
-            if (captchaUrl != null && _captcha.value?.busy != true) clearCaptcha()
+            if (promptUrl != null && _prompt.value?.busy != true) clearPrompt()
             return
         }
         val identity = url.ifEmpty { html }
-        if (identity == captchaUrl) return
+        if (identity == promptUrl) return
         // A script's own setup page was asked for by the person; only a Yandex check is snoozed.
-        if (!own && System.currentTimeMillis() < captchaSnoozedUntil) {
-            Mobile.cancelCaptcha()
+        if (!own && System.currentTimeMillis() < promptSnoozedUntil) {
+            Mobile.cancelPrompt()
             return
         }
-        captchaUrl = identity
-        captchaSolved = false
-        val proxy = Mobile.pendingCaptchaProxy().orEmpty()
-        val reason = Mobile.pendingCaptchaReason().orEmpty()
+        promptUrl = identity
+        promptSolved = false
+        val proxy = Mobile.pendingPromptProxy().orEmpty()
+        val reason = Mobile.pendingPromptReason().orEmpty()
         val remote = proxy.isNotEmpty()
         log(
             LogLevel.Warning,
@@ -647,49 +647,49 @@ class AndroidConnectionService(
                 else -> "Яндекс просит пройти проверку"
             },
         )
-        _captcha.value = CaptchaPrompt(
+        _prompt.value = TransportPrompt(
             url, reason, remote,
-            html = html.ifEmpty { null }, own = own, transport = Mobile.pendingCaptchaTransport().orEmpty(),
+            html = html.ifEmpty { null }, own = own, transport = Mobile.pendingPromptTransport().orEmpty(),
         )
         openPage(url, proxy, html, own)
-        if (!context.openFlux.visible) CoreService.notifyCaptcha(context, remote, login = reason == "login")
+        if (!context.openFlux.visible) CoreService.notifyPrompt(context, remote, login = reason == "login")
     }
 
     /** Waits while the core has a check pending; true if the user passed it. */
-    private suspend fun awaitCaptcha(current: Run): Boolean {
-        if (Mobile.pendingCaptchaURL().isNullOrEmpty()) return false
-        while (!current.stopping && !Mobile.pendingCaptchaURL().isNullOrEmpty()) delay(500)
-        return captchaSolved && !current.stopping
+    private suspend fun awaitPrompt(current: Run): Boolean {
+        if (Mobile.pendingPromptURL().isNullOrEmpty()) return false
+        while (!current.stopping && !Mobile.pendingPromptURL().isNullOrEmpty()) delay(500)
+        return promptSolved && !current.stopping
     }
 
-    override fun openCaptcha() {
-        val prompt = _captcha.value ?: return
-        openPage(prompt.url, Mobile.pendingCaptchaProxy().orEmpty(), prompt.html.orEmpty(), prompt.own)
+    override fun openPrompt() {
+        val prompt = _prompt.value ?: return
+        openPage(prompt.url, Mobile.pendingPromptProxy().orEmpty(), prompt.html.orEmpty(), prompt.own)
     }
 
     private fun openPage(url: String, proxy: String, html: String = "", own: Boolean = html.isNotEmpty()) {
-        (_captchaPage.value as? WebPage)?.close()
+        (_promptPage.value as? WebPage)?.close()
         val page = when {
             html.isNotEmpty() -> WebPage(html = html, onSubmit = ::onSetupSubmission)
             // The script's own server: loopback, never through the exit's proxy.
             own -> WebPage(url, own = true, onSubmit = ::onSetupSubmission)
             else -> WebPage(url, proxy)
         }
-        _captchaPage.value = page
-        _captcha.update { it?.copy(error = "", progress = "") }
+        _promptPage.value = page
+        _prompt.update { it?.copy(error = "", progress = "") }
         if (own) return // the page submits itself; no cookie/settle detection applies.
         // A real browser is often let through without any check (it targets the
         // core's bot-like client): a regular page that stays put counts as passed.
         scope.launch {
             var settledSince = 0L
-            while (_captchaPage.value === page && !page.closed) {
+            while (_promptPage.value === page && !page.closed) {
                 val settled = !page.loading && page.url.startsWith("https://") && !YandexDisk.isCheckpoint(page.url)
                 val now = System.currentTimeMillis()
                 if (!settled) settledSince = 0L
                 else if (settledSince == 0L) settledSince = now
                 else if (now - settledSince >= SETTLE_MS) {
                     log(LogLevel.Info, "Страница Яндекса открылась без проверки, передаю cookies")
-                    submitCaptcha()
+                    submitPrompt()
                     return@launch
                 }
                 delay(300)
@@ -704,26 +704,26 @@ class AndroidConnectionService(
      * node-scoped delivery during a node deploy is a separate, not yet wired, path.
      */
     private fun onSetupSubmission(json: String) {
-        if (_captcha.value?.busy == true) return
-        _captcha.update { it?.copy(busy = true, error = "") }
+        if (_prompt.value?.busy == true) return
+        _prompt.update { it?.copy(busy = true, error = "") }
         scope.launch {
-            captchaSolved = true
-            val error = Mobile.submitCaptchaData(json).orEmpty()
+            promptSolved = true
+            val error = Mobile.submitPromptData(json).orEmpty()
             if (error.isNotEmpty()) {
-                captchaSolved = false
-                _captcha.update { it?.copy(busy = false, error = error) }
+                promptSolved = false
+                _prompt.update { it?.copy(busy = false, error = error) }
                 return@launch
             }
             log(LogLevel.Success, "Настройка передана транспорту")
-            clearCaptcha()
+            clearPrompt()
         }
     }
 
-    override fun submitCaptcha() {
-        val prompt = _captcha.value ?: return
+    override fun submitPrompt() {
+        val prompt = _prompt.value ?: return
         if (prompt.busy) return
-        val page = _captchaPage.value as? WebPage
-        _captcha.update { it?.copy(busy = true, error = "") }
+        val page = _promptPage.value as? WebPage
+        _prompt.update { it?.copy(busy = true, error = "") }
         scope.launch {
             val cookies = CookieManager.getInstance()
             cookies.flush()
@@ -732,32 +732,32 @@ class AndroidConnectionService(
                 .joinToString("; ")
             // Set first: the core drops the pending check inside the call, and a
             // start waiting on it must already see it passed.
-            captchaSolved = true
+            promptSolved = true
             val error = if (header.isEmpty()) "Нет cookies: пройдите проверку на странице выше"
-            else Mobile.submitCaptchaCookies(header).orEmpty()
+            else Mobile.submitPromptCookies(header).orEmpty()
             if (error.isNotEmpty()) {
-                captchaSolved = false
-                _captcha.update { it?.copy(busy = false, error = error) }
+                promptSolved = false
+                _prompt.update { it?.copy(busy = false, error = error) }
                 return@launch
             }
             log(LogLevel.Success, "Проверка пройдена, cookies переданы ${if (prompt.remote) "ноде" else "ядру"}")
-            clearCaptcha()
+            clearPrompt()
         }
     }
 
-    override fun dismissCaptcha() {
-        if (_captcha.value?.own == false) captchaSnoozedUntil = System.currentTimeMillis() + CAPTCHA_SNOOZE_MS
-        captchaSolved = false
-        Mobile.cancelCaptcha()
-        clearCaptcha()
+    override fun dismissPrompt() {
+        if (_prompt.value?.own == false) promptSnoozedUntil = System.currentTimeMillis() + PROMPT_SNOOZE_MS
+        promptSolved = false
+        Mobile.cancelPrompt()
+        clearPrompt()
     }
 
-    private fun clearCaptcha() {
-        captchaUrl = null
-        _captcha.value = null
-        (_captchaPage.value as? WebPage)?.close()
-        _captchaPage.value = null
-        CoreService.cancelCaptcha(context)
+    private fun clearPrompt() {
+        promptUrl = null
+        _prompt.value = null
+        (_promptPage.value as? WebPage)?.close()
+        _promptPage.value = null
+        CoreService.cancelPrompt(context)
     }
 
     override fun consumeNodeParams(): Pair<String, Map<String, String>>? {
@@ -833,7 +833,7 @@ class AndroidConnectionService(
         private const val NETWORK_WAIT_MS = 5_000L
         private const val SETTLE_MS = 1500L
         private const val MAX_LOG_LINES = 5000
-        private const val CAPTCHA_SNOOZE_MS = 10 * 60_000L
+        private const val PROMPT_SNOOZE_MS = 10 * 60_000L
         private val IP = Regex("""^[0-9a-fA-F:.]{3,45}$""")
         /** Lines the app's side of the core writes; the rest is the transports' debug log. */
         private val APP_TAGS = listOf("[ANDROID]", "[NODE]", "[ERROR]", "[SUCCESS]", "[WARN")

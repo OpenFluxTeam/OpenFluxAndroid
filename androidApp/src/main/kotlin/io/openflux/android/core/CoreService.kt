@@ -114,14 +114,14 @@ class CoreService : VpnService() {
     companion object {
         const val ACTION_STOP = "io.openflux.android.STOP"
         private const val NOTIFICATION_ID = 7
-        private const val CAPTCHA_NOTIFICATION_ID = 9
+        private const val PROMPT_NOTIFICATION_ID = 9
         private const val CORE_CHANNEL = "openflux_core"
-        private const val CAPTCHA_CHANNEL = "openflux_captcha"
+        private const val PROMPT_CHANNEL = "openflux_captcha"
 
         fun createChannels(context: Context) {
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(NotificationChannel(CORE_CHANNEL, "Подключение OpenFlux", NotificationManager.IMPORTANCE_LOW))
-            manager.createNotificationChannel(NotificationChannel(CAPTCHA_CHANNEL, "Проверка Яндекса", NotificationManager.IMPORTANCE_HIGH))
+            manager.createNotificationChannel(NotificationChannel(PROMPT_CHANNEL, "Проверка Яндекса", NotificationManager.IMPORTANCE_HIGH))
         }
 
         fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
@@ -131,7 +131,7 @@ class CoreService : VpnService() {
         )
 
         /** A Yandex check waits while the app is in the background: tapping opens it. */
-        fun notifyCaptcha(context: Context, remote: Boolean, login: Boolean) {
+        fun notifyPrompt(context: Context, remote: Boolean, login: Boolean) {
             createChannels(context)
             val title = when {
                 remote && login -> "OpenFlux: ноде нужен вход в Яндекс"
@@ -139,18 +139,18 @@ class CoreService : VpnService() {
                 login -> "OpenFlux: нужен вход в Яндекс"
                 else -> "OpenFlux: нужна проверка Яндекса"
             }
-            val notification = Notification.Builder(context, CAPTCHA_CHANNEL)
+            val notification = Notification.Builder(context, PROMPT_CHANNEL)
                 .setContentTitle(title)
                 .setContentText("Нажмите, чтобы открыть проверку")
                 .setSmallIcon(R.drawable.ic_openflux_notification)
                 .setAutoCancel(true)
                 .setContentIntent(openAppIntent(context))
                 .build()
-            runCatching { context.getSystemService(NotificationManager::class.java).notify(CAPTCHA_NOTIFICATION_ID, notification) }
+            runCatching { context.getSystemService(NotificationManager::class.java).notify(PROMPT_NOTIFICATION_ID, notification) }
         }
 
-        fun cancelCaptcha(context: Context) {
-            context.getSystemService(NotificationManager::class.java).cancel(CAPTCHA_NOTIFICATION_ID)
+        fun cancelPrompt(context: Context) {
+            context.getSystemService(NotificationManager::class.java).cancel(PROMPT_NOTIFICATION_ID)
         }
     }
 }

@@ -40,7 +40,7 @@ class OpenFluxApplication : Application() {
     lateinit var container: AppContainer
         private set
 
-    /** An activity of the app is on screen (captcha requests notify otherwise). */
+    /** An activity of the app is on screen (prompt requests notify otherwise). */
     @Volatile var visible = false
 
     /** The way back from the sign-in page; [MainActivity] hands it the address the browser returned to. */
