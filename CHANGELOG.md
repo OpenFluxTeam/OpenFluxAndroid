@@ -5,6 +5,16 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.9.6] - 2026-10-18 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.14.5 / node-v1.7.3.
+
+### Fixed
+
+- **Avito connects more reliably.** A room a node just made is joined over Socket.IO, as Avito's web client does, when Avito's
+  realtime side does not know it yet, so a fresh node connects. Dials are spent within what Avito lets one address do, and
+  after a 429 the pause is shared by every process on the host and doubles up to half an hour instead of retrying every second.
+
 ## [3.9.5] - 2026-10-17 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.4 / node-v1.7.3.
