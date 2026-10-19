@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
@@ -40,6 +41,10 @@ import java.util.concurrent.atomic.AtomicLong
  * rather than through cookies. The submit channel belongs to the page's own
  * address: once the WebView is anywhere else (a link out of the page) what it
  * sends is dropped.
+ *
+ * With [onLogin] the same page may also ask for a sign-in window
+ * (window.openfluxLogin): the service opens it as another [WebPage] and
+ * answers through [deliver].
  */
 class WebPage(
     private val startUrl: String = "",
@@ -50,6 +55,8 @@ class WebPage(
     private val html: String? = null,
     private val onSubmit: ((String) -> Unit)? = null,
     private val own: Boolean = false,
+    /** window.openfluxLogin(spec) from the page: the request's JSON (see [SetupPages.LoginRequest]); only own pages have it. */
+    private val onLogin: ((String) -> Unit)? = null,
 ) : BrowserPage {
     /** The address an own-server page's frame must keep for the bridge to stay with it; null otherwise. */
     private val ownOrigin: String? = if (own) SetupPages.loopbackOrigin(startUrl) else null
@@ -59,6 +66,9 @@ class WebPage(
     }
 
     private val setupPage: Boolean get() = html != null || own
+
+    /** The page's bridge snippet: with openfluxLogin only when someone listens for it. */
+    private val bridgeJs: String = if (onLogin != null) SUBMIT_LOGIN_BRIDGE_JS else SUBMIT_BRIDGE_JS
 
     @Volatile var url: String = startUrl
         private set
@@ -110,7 +120,7 @@ class WebPage(
         // WebView can do that, and again when it has loaded where it cannot (idempotent).
         val origin = ownOrigin
         if (origin != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-            runCatching { WebViewCompat.addDocumentStartJavaScript(web, SUBMIT_BRIDGE_JS, setOf(origin.trimEnd('/'))) }
+            runCatching { WebViewCompat.addDocumentStartJavaScript(web, bridgeJs, setOf(origin.trimEnd('/'))) }
         }
         web.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -131,14 +141,14 @@ class WebPage(
             override fun onPageFinished(view: WebView, url: String) {
                 this@WebPage.url = url
                 loading = false
-                if (setupPage && bridgeAllowedAt(url)) view.evaluateJavascript(SUBMIT_BRIDGE_JS, null)
+                if (setupPage && bridgeAllowedAt(url)) view.evaluateJavascript(bridgeJs, null)
             }
         }
         view = web
         if (html != null) {
             // Never through the tunnel's proxy: a script's own page is loopback-only,
             // like httpserver.listen() on the core side it usually talks to.
-            web.loadDataWithBaseURL(null, SetupPages.inject(html, SUBMIT_BRIDGE_JS), "text/html", "utf-8", null)
+            web.loadDataWithBaseURL(null, SetupPages.inject(html, bridgeJs), "text/html", "utf-8", null)
         } else if (proxy.isEmpty()) {
             web.loadUrl(startUrl)
         } else if (WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) {
@@ -177,6 +187,12 @@ class WebPage(
         } finally {
             results.remove(id)
         }
+    }
+
+    /** Runs [script] on the page (the answer to its openfluxLogin, see [SetupPages.loginResultScript]); nothing if it is gone. */
+    fun deliver(script: String) {
+        val web = view ?: return
+        web.post { if (!closed) web.evaluateJavascript(script, null) }
     }
 
     /** Sends the page to [url] once it is on screen. */
@@ -224,6 +240,12 @@ class WebPage(
             if (!bridgeAllowedAt(this@WebPage.url)) return
             onSubmit?.invoke(json)
         }
+
+        @JavascriptInterface
+        fun login(json: String) {
+            if (!bridgeAllowedAt(this@WebPage.url)) return
+            onLogin?.invoke(json)
+        }
     }
 
     companion object {
@@ -231,6 +253,19 @@ class WebPage(
         private const val BRIDGE = "OpenFluxBridge"
         private const val SUBMIT_BRIDGE = "OpenFluxSubmit"
         private val SUBMIT_BRIDGE_JS = SetupPages.bridgeScript("window.$SUBMIT_BRIDGE.submit(j)")
+        private val SUBMIT_LOGIN_BRIDGE_JS = SetupPages.bridgeScript("window.$SUBMIT_BRIDGE.submit(j)", "window.$SUBMIT_BRIDGE.login(j)")
+
+        /** A desktop Chrome: a messenger's web client (MAX) gives a phone's browser an "open the app" page instead of its sign-in. */
+        const val SIGN_IN_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+
+        /**
+         * Forgets what the built-in browser keeps in JavaScript storage for the site at [origin]
+         * ("https://host"), so a sign-in window for it starts signed out and what it reads afterwards
+         * is the account the person just signed in with, not an earlier one. Main thread only.
+         */
+        fun forgetSite(origin: String) {
+            WebStorage.getInstance().deleteOrigin(origin)
+        }
 
         /** Every cookie of the built-in browser, the Yandex sign-in among them. */
         fun clearCookies() {
