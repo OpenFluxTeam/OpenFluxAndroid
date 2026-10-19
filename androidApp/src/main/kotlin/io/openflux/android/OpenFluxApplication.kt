@@ -86,21 +86,17 @@ class OpenFluxApplication : Application() {
         container.subscription.start(CoroutineScope(SupervisorJob() + Dispatchers.Default))
         container.bot.start(CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
-        // The JS (goja) script-transport engine is an experimental feature: nothing of it runs
-        // until the user turns "Экспериментальные функции" on. Then the scripts shipped in the
-        // APK are installed (or upgraded) and the engine is proved to run in-process once; the
-        // result lands in logcat under the tag "OpenFluxJS".
+        // The JS (goja) script transports are the app's own now: the scripts shipped in the APK are installed (or
+        // upgraded) at every start, and the engine is proved to run in-process once; the result lands in logcat
+        // under the tag "OpenFluxJS".
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
-            settings.settings.map { it.experimental }.distinctUntilChanged().collect { on ->
-                if (!on) return@collect
-                scripts.syncBundled()
-                try {
-                    val available = Mobile.scriptEngineAvailable()
-                    val result = Mobile.scriptEngineSelfTest(cacheDir.absolutePath)
-                    Log.i("OpenFluxJS", "engine available=$available selftest=$result")
-                } catch (t: Throwable) {
-                    Log.e("OpenFluxJS", "engine self-test failed", t)
-                }
+            scripts.syncBundled()
+            try {
+                val available = Mobile.scriptEngineAvailable()
+                val result = Mobile.scriptEngineSelfTest(cacheDir.absolutePath)
+                Log.i("OpenFluxJS", "engine available=$available selftest=$result")
+            } catch (t: Throwable) {
+                Log.e("OpenFluxJS", "engine self-test failed", t)
             }
         }
     }

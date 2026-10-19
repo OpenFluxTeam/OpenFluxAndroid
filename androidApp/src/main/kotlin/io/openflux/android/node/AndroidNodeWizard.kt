@@ -10,6 +10,7 @@ import io.openflux.desktop.model.LogLine
 import io.openflux.desktop.model.NewChannel
 import io.openflux.desktop.model.NodeCoreSource
 import io.openflux.desktop.model.NodeDocuments
+import io.openflux.desktop.model.NodeKit
 import io.openflux.desktop.model.NodeMode
 import io.openflux.desktop.model.NodePlan
 import io.openflux.desktop.model.NodeTransport
@@ -89,6 +90,13 @@ class AndroidNodeWizard(private val accounts: Accounts) : NodeWizardService {
         call("nodeApply", "channel=${channel.id} ${transports.names()} port=$port autoUpdate=$autoUpdate mode=${mode.cli}") {
             Mobile.nodeApply(channel.id, transports.json(), channel.key, port.toLong(), autoUpdate, sudoPassword, cookieHeader, mode.cli)
         }
+    }
+
+    override suspend fun kit(channel: NewChannel, transports: List<NodeTransport>, autoUpdate: Boolean, mode: NodeMode, source: NodeCoreSource): NodeKit {
+        val reply = call("nodeKit", "channel=${channel.id} ${transports.names()} autoUpdate=$autoUpdate mode=${mode.cli}") {
+            Mobile.nodeKit(channel.id, transports.json(), channel.key, autoUpdate, mode.cli, source.id)
+        }
+        return json.decodeFromJsonElement(NodeKit.serializer(), reply.getValue("kit"))
     }
 
     override suspend fun createCupsRooms(): String =

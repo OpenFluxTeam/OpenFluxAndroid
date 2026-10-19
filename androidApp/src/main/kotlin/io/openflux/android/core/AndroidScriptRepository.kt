@@ -11,8 +11,8 @@ import java.io.File
 /**
  * The Android app's registry of installed JS script transports. The core is a
  * library here, so reading a transport is an in-process call; the scripts
- * shipped in the APK (assets/scripts) are installed the first time the experimental
- * features are turned on and replace the installed copies when a build brings newer ones.
+ * shipped in the APK (assets/scripts) are installed the first time the app starts and
+ * replace the installed copies when a build brings newer ones.
  */
 class AndroidScriptRepository(context: Context) :
     FileScriptRepository(File(context.applicationContext.filesDir, "scripts"), { data, sig, key -> Mobile.inspectTransport(data, sig, key) }) {
@@ -23,8 +23,7 @@ class AndroidScriptRepository(context: Context) :
 
     /**
      * Installs the scripts shipped in the APK, or upgrades the installed copies of them. Not at
-     * construction: it runs the script engine, so it waits for the user to turn the experimental
-     * features on (see OpenFluxApplication).
+     * construction: it runs the script engine, so it is called once the app is up (see OpenFluxApplication).
      */
     fun syncBundled() {
         if (scripts.value.isEmpty()) installBundled() else upgradeBundled()
@@ -36,15 +35,19 @@ class AndroidScriptRepository(context: Context) :
         return CoreSpecs.ScriptCarrier(File(dir, s.fileName).absolutePath, s.pubkeyHex, s.id, s.primaryParam?.key)
     }
 
-    /** The (script, detached signature) pairs shipped with this build. */
+    /**
+     * The (script, detached signature) pairs shipped with this build. A signed package (.flux) carries its own
+     * signature, so it has none beside it; a transport that a node has to run (MAX) ships as one, because the
+     * installer sends a node nothing else.
+     */
     private fun shipped(): List<Triple<String, ByteArray, ByteArray>> {
         val assets = appContext.assets
-        val names = runCatching { assets.list("scripts")?.toList().orEmpty() }.getOrDefault(emptyList()).filter { it.endsWith(".js") }
+        val names = runCatching { assets.list("scripts")?.toList().orEmpty() }.getOrDefault(emptyList()).filter { it.endsWith(".js") || it.endsWith(".flux") }
         return names.mapNotNull { file ->
             runCatching {
-                val js = assets.open("scripts/$file").use { it.readBytes() }
-                val sig = assets.open("scripts/$file.sig").use { it.readBytes() }
-                Triple(file, js, sig)
+                val data = assets.open("scripts/$file").use { it.readBytes() }
+                val sig = if (file.endsWith(".flux")) ByteArray(0) else assets.open("scripts/$file.sig").use { it.readBytes() }
+                Triple(file, data, sig)
             }.getOrNull()
         }
     }
@@ -79,6 +82,13 @@ class AndroidScriptRepository(context: Context) :
                 val wasEnabled = installed.enabled
                 install(js, sig, officialKey, ScriptSource.Bundled, "bundled:$file", now = installed.addedAt)
                 if (!wasEnabled) setEnabled(name, false)
+                // A script that came as a bare .js and now comes as a .flux leaves its old file behind otherwise.
+                val now = byId(name)
+                if (now != null && now.fileName != installed.fileName) {
+                    File(dir, installed.fileName).delete()
+                    File(dir, installed.fileName + ".sig").delete()
+                    File(dir, installed.fileName + ".prev").delete()
+                }
             }
         }
     }

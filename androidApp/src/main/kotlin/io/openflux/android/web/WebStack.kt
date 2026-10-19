@@ -91,7 +91,7 @@ class WebStack private constructor() : BrowserPage {
             }
             val origin = SetupPages.httpsOrigin(request.url) ?: return@launch refuse(request.id, "Окно входа открывает только https-сайт")
             WebPage.forgetSite(origin)
-            val window = WebPage(request.url, scripts = true, userAgent = WebPage.SIGN_IN_USER_AGENT)
+            val window = WebPage(request.url, scripts = true, userAgent = WebPage.SIGN_IN_USER_AGENT, clearStorage = listOf(request.storageKey))
             val run = SignIn(request, origin, window)
             signIn = run
             signInTitle = request.title

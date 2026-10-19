@@ -24,6 +24,9 @@ import io.openflux.desktop.model.ConnectionNarrative
 import io.openflux.desktop.model.ConnectionState
 import io.openflux.desktop.model.CoreConfig
 import io.openflux.desktop.model.ExitAddress
+import io.openflux.desktop.model.NEEDS_NODE_MESSAGE
+import io.openflux.desktop.model.NODE_PROFILE_MESSAGE
+import io.openflux.desktop.model.needsNode
 import io.openflux.desktop.model.LogLevel
 import io.openflux.desktop.model.LogLine
 import io.openflux.desktop.model.NetworkKind
@@ -377,8 +380,10 @@ class AndroidConnectionService(
     private fun startCarrier(current: Run): String {
         val profile = current.profile
         val secret = profile.secret
-        // A script carrier runs the JS engine, an experimental feature that is off until the user turns it on.
-        if (!current.settings.experimental && profile.carriers.any { it.type == TransportType.SCRIPT }) return CoreConfig.SCRIPTS_OFF
+        // A transport whose two ends are set up together has nothing on the other end until a node is made; a node's own
+        // profile is not a way to connect.
+        if (profile.needsNode(scripts?.scripts?.value.orEmpty())) return NEEDS_NODE_MESSAGE
+        if (current.kind != Kind.Exit && profile.source == ProfileSource.ThisNode) return NODE_PROFILE_MESSAGE
         Mobile.setDebugLevel(current.settings.debugLevel.toLong())
         Mobile.setNetworkBinder(current.networks)
         // The mode without a server: a PHP node on a web hosting, over cups.online or a Mail.ru document.

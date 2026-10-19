@@ -59,6 +59,8 @@ class WebPage(
     private val own: Boolean = false,
     /** window.openfluxLogin(spec) from the page: the request's JSON (see [SetupPages.LoginRequest]); only own pages have it. */
     private val onLogin: ((String) -> Unit)? = null,
+    /** localStorage keys of the site that are removed before its own scripts run, once: the page starts signed out ([SetupPages.clearStorageScript]). */
+    private val clearStorage: List<String> = emptyList(),
 ) : BrowserPage {
     /** The address an own-server page's frame must keep for the bridge to stay with it; null otherwise. */
     private val ownOrigin: String? = if (own) SetupPages.loopbackOrigin(startUrl) else null
@@ -123,6 +125,16 @@ class WebPage(
         val origin = ownOrigin
         if (origin != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             runCatching { WebViewCompat.addDocumentStartJavaScript(web, bridgeJs, setOf(origin.trimEnd('/'))) }
+        }
+        // A sign-in window starts signed out: what an earlier window kept is removed before the site reads it.
+        if (clearStorage.isNotEmpty()) {
+            val site = SetupPages.httpsOrigin(startUrl)
+            if (site != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                runCatching { WebViewCompat.addDocumentStartJavaScript(web, SetupPages.clearStorageScript(clearStorage), setOf(site)) }
+            } else {
+                // No document-start script in this WebView: all it has stored goes, the one way left to start signed out.
+                WebStorage.getInstance().deleteAllData()
+            }
         }
         web.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -267,6 +279,12 @@ class WebPage(
          */
         fun forgetSite(origin: String) {
             WebStorage.getInstance().deleteOrigin(origin)
+            // Its cookies too (the ones this page may set; others are the site's own business): a site may sign in by them.
+            val cookies = CookieManager.getInstance()
+            cookies.getCookie(origin)?.split(';')?.map { it.substringBefore('=').trim() }?.filter { it.isNotEmpty() }?.forEach {
+                cookies.setCookie(origin, "$it=; Max-Age=0; Path=/")
+            }
+            cookies.flush()
         }
 
         /** Every cookie of the built-in browser, the Yandex sign-in among them. */
