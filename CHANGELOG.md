@@ -5,6 +5,30 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+
+- **A node without SSH.** «Серверы → Нода без SSH» asks where the node will live: a command to run on a machine of your own
+  (the app makes the node's key itself and hands over a script that downloads the pinned installer, checks its SHA-256 and
+  installs the node, or only changes the transports of one that is already there), another device with OpenFlux (the node's
+  profile goes over as a QR or a line), or this device. A connection whose script transport needs a node of its own (MAX)
+  says so on Home and in its profile, and «Создать ноду» leads to the same choice.
+- **A script's own wizard before any connection exists** (`Transport.setup`) and the **sign-in windows** its page can open
+  (`window.openfluxLogin`): the MAX wizard signs both accounts in, no tokens to paste.
+- MAX (`oneme-webrtc` 3.3.2) ships as a signed `.flux` package, the only form a node's installer accepts.
+
+### Changed
+
+- **«Экспериментальные функции» is now «Включить легаси».** JS transports are always available: nothing to switch on to use,
+  install or update them. The switch only opens the first transports (Яндекс Документы, Mail.ru, Доска, Телемост,
+  Cups.online, Avito Code, MAX by token) for choosing in new connections and nodes; whatever already uses one keeps showing
+  it and connecting. New connections start from a JS transport. Settings → «Транспорты» is the catalogue, «Легаси» the switch.
+
+### Fixed
+
+- A sign-in window opened by a script's wizard starts signed out: the node's account was taken for the one the client had
+  just signed in with.
+- The screens of a node without a server were closed by the navigator as screens of a forgotten server.
+
 ## [3.9.6] - 2026-10-18 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.5 / node-v1.7.3.
