@@ -20,7 +20,9 @@ __bundleModules["../../lib/maxclient.js"] = function (module, exports, require) 
 // whether you're logged in, whether the signaling socket is alive) is
 // identical for both.
 
-var WS_HOST = "wss://api.oneme.ru/websocket";
+// The JSON (ver 11) socket lives on ws-api; api.oneme.ru is the web client's own
+// endpoint and closes a JSON session right after its first request.
+var WS_HOST = "wss://ws-api.oneme.ru/websocket";
 var RPC_VERSION = 11;
 var USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36";
 var KEEPALIVE_MS = 30000;
@@ -135,7 +137,7 @@ function loginByToken(client, token) {
   return client.invoke(6, {
     userAgent: {
       deviceType: "WEB", locale: "ru_RU", osVersion: "macOS",
-      deviceName: "Chrome", appVersion: "26.10.3",
+      deviceName: "Chrome", appVersion: "26.10.5",
       screen: "956x1470 2.0x", timezone: "Asia/Vladivostok",
     },
     deviceId: client.deviceId,
@@ -146,7 +148,7 @@ function loginByToken(client, token) {
     });
   }).then(function (resp) {
     var payload = resp.payload || {};
-    if (payload.error) throw new Error("login failed: " + JSON.stringify(payload.error));
+    if (payload.error) throw new Error("MAX не принял токен: " + (payload.localizedMessage || payload.message || payload.error));
     return resp;
   });
 }
@@ -628,7 +630,7 @@ var Transport = {
   info: function () {
     return {
       name: "oneme-webrtc",
-      version: "3.2.0",
+      version: "3.2.1",
       mtu: 0,
       reliable: false,
       ordered: false,
