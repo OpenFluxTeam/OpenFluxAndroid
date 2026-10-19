@@ -57,6 +57,11 @@ class AndroidPlatformServices(
     override fun scriptSettings(data: ByteArray, sig: ByteArray, pubkeyHex: String, valuesJson: String, lang: String): String =
         io.openflux.bridge.mobile.Mobile.scriptSettings(data, sig, pubkeyHex, valuesJson, lang)
 
+    override fun scriptSetupStart(path: String, pubkeyHex: String, valuesJson: String): String =
+        io.openflux.bridge.mobile.Mobile.scriptSetupStart(path, pubkeyHex, valuesJson)
+
+    override fun scriptSetupStop() = io.openflux.bridge.mobile.Mobile.scriptSetupStop()
+
     override fun checkScriptUpdate(installedJson: String, channel: String): String =
         io.openflux.bridge.mobile.Mobile.checkScriptUpdate(installedJson, channel)
 

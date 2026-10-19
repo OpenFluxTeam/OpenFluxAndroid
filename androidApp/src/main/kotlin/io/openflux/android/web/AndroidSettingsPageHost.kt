@@ -8,7 +8,14 @@ object AndroidSettingsPageHost : SettingsPageHost {
     override suspend fun open(html: String, onStep: (String) -> Unit, onSubmit: (String) -> Unit): BrowserPage =
         WebPage(html = html, onSubmit = onSubmit)
 
+    // A setup wizard run with the real host: its own server page, which may ask for a sign-in window.
+    override suspend fun openOwn(url: String, onStep: (String) -> Unit, onSubmit: (String) -> Unit): BrowserPage =
+        WebStack.own(url, onSubmit)
+
     override fun close(page: BrowserPage) {
-        (page as? WebPage)?.close()
+        when (page) {
+            is WebStack -> page.close()
+            is WebPage -> page.close()
+        }
     }
 }

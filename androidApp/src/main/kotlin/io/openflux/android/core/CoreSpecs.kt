@@ -36,7 +36,7 @@ internal object CoreSpecs {
         directPort: Int,
         resolveScript: (String) -> ScriptCarrier? = { null },
     ): String {
-        val specs = profile.sessionSpecs().filterNot { exit && it.type == TransportType.DIRECT }
+        val specs = profile.sessionSpecs(exit).filterNot { exit && it.type == TransportType.DIRECT }
         val transports = buildJsonArray {
             for (spec in specs) add(spec(spec.name, spec.type, spec.value, spec.uid, spec.priority, spec.scriptId, spec.settings, resolveScript, spec.network.cli))
             // The exit listens for direct only when the profile has it.
@@ -91,7 +91,7 @@ internal object CoreSpecs {
                     // The profile param's own value rides along under its declared key
                     // too (mirroring "url" above): a script reading cfg.params[key]
                     // instead of cfg.url sees what the profile editor's field saved.
-                    val merged = settings + (script.primaryParamKey?.let { mapOf(it to value) } ?: emptyMap())
+                    val merged = io.openflux.desktop.model.ScriptSettingsCodec.withPrimary(settings, script.primaryParamKey, value)
                     // Nested, not flattened here: the core's registry merges it into cfg.params without
                     // letting a setting shadow path/pubkey/name/exit.
                     if (merged.isNotEmpty()) put("settings", buildJsonObject { merged.forEach { (k, v) -> put(k, v) } })

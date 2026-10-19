@@ -9,6 +9,8 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
@@ -277,13 +279,23 @@ class WebPage(
     }
 }
 
-/** Shows [WebPage]s inside the Compose UI. */
+/** Shows [WebPage]s and [WebStack]s inside the Compose UI. */
 object WebBrowserViews : BrowserViews {
     @Composable
     override fun Page(page: BrowserPage, modifier: Modifier) {
-        val web = page as? WebPage ?: return
-        key(web) {
-            AndroidView(factory = { context -> web.view(context) }, modifier = modifier)
+        when (page) {
+            is WebPage -> key(page) {
+                AndroidView(factory = { context -> page.view(context) }, modifier = modifier)
+            }
+            // A script's own page; while it asks for a sign-in window that window is what is shown, with its way back.
+            is WebStack -> Column(modifier) {
+                page.signInTitle?.let { SignInBar(it, page::back, page::reload) }
+                val web = page.top
+                key(web) {
+                    AndroidView(factory = { context -> web.view(context) }, modifier = Modifier.weight(1f).fillMaxWidth())
+                }
+            }
+            else -> Unit
         }
     }
 }

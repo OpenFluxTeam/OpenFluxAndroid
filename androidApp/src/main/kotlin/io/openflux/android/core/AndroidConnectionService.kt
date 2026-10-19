@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import io.openflux.android.ActivityBridge
 import io.openflux.android.openFlux
 import io.openflux.android.web.WebPage
+import io.openflux.android.web.WebStack
 import io.openflux.bridge.mobile.Mobile
 import io.openflux.desktop.model.AppSettings
 import io.openflux.desktop.model.TransportPrompt
@@ -29,7 +30,6 @@ import io.openflux.desktop.model.NetworkKind
 import io.openflux.desktop.model.Profile
 import io.openflux.desktop.model.TrafficStats
 import io.openflux.desktop.model.TransportType
-import io.openflux.desktop.model.SetupPages
 import io.openflux.desktop.model.YandexDisk
 import io.openflux.desktop.service.ConnectionService
 import io.openflux.desktop.service.SettingsRepository
@@ -37,7 +37,6 @@ import io.openflux.app.home.statusLine
 import io.openflux.app.platform.BrowserPage
 import io.openflux.app.text.Fmt
 import org.json.JSONObject
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -127,24 +126,6 @@ class AndroidConnectionService(
     @Volatile private var promptSolved = false
     /** "Позже": checks for a Yandex page stay quiet until then (the other transports carry on); a new connection resets it. */
     @Volatile private var promptSnoozedUntil = 0L
-
-    /**
-     * The sign-in window a setup page opened on top of itself with
-     * window.openfluxLogin: [window] is what the person sees, [under] the page
-     * that waits for the answer and comes back when the window ends, [reason]
-     * the dialog's title to put back.
-     */
-    private class SignIn(
-        val request: SetupPages.LoginRequest,
-        val origin: String,
-        val window: WebPage,
-        val under: WebPage,
-        val reason: String,
-    ) {
-        var job: Job? = null
-    }
-
-    @Volatile private var signIn: SignIn? = null
 
     private val cookieStore get() = File(context.filesDir, "transport-cookies.json")
 
@@ -683,31 +664,28 @@ class AndroidConnectionService(
     }
 
     override fun openPrompt() {
-        // In a sign-in window "open again" reloads the window, not the page under it.
-        signIn?.let { it.window.load(it.request.url); return }
         val prompt = _prompt.value ?: return
         openPage(prompt.url, Mobile.pendingPromptProxy().orEmpty(), prompt.html.orEmpty(), prompt.own)
     }
 
     private fun openPage(url: String, proxy: String, html: String = "", own: Boolean = html.isNotEmpty()) {
-        (_promptPage.value as? WebPage)?.close()
-        lateinit var setup: WebPage
-        val page = when {
-            html.isNotEmpty() -> WebPage(html = html, onSubmit = ::onSetupSubmission, onLogin = { json -> onLoginRequest(setup, json) })
+        closePage(_promptPage.value)
+        val page: BrowserPage = when {
+            html.isNotEmpty() -> WebStack.inline(html, ::onSetupSubmission)
             // The script's own server: loopback, never through the exit's proxy.
-            own -> WebPage(url, own = true, onSubmit = ::onSetupSubmission, onLogin = { json -> onLoginRequest(setup, json) })
+            own -> WebStack.own(url, ::onSetupSubmission)
             else -> WebPage(url, proxy)
         }
-        if (html.isNotEmpty() || own) setup = page
         _promptPage.value = page
         _prompt.update { it?.copy(error = "", progress = "") }
         if (own) return // the page submits itself; no cookie/settle detection applies.
         // A real browser is often let through without any check (it targets the
         // core's bot-like client): a regular page that stays put counts as passed.
+        val check = page as? WebPage ?: return
         scope.launch {
             var settledSince = 0L
-            while (_promptPage.value === page && !page.closed) {
-                val settled = !page.loading && page.url.startsWith("https://") && !YandexDisk.isCheckpoint(page.url)
+            while (_promptPage.value === page && !check.closed) {
+                val settled = !check.loading && check.url.startsWith("https://") && !YandexDisk.isCheckpoint(check.url)
                 val now = System.currentTimeMillis()
                 if (!settled) settledSince = 0L
                 else if (settledSince == 0L) settledSince = now
@@ -718,73 +696,6 @@ class AndroidConnectionService(
                 }
                 delay(300)
             }
-        }
-    }
-
-    /**
-     * window.openfluxLogin(spec) from a script's own setup page ([from]): a
-     * window for the site on top of it, in which the person signs in. The
-     * page's promise is settled with what the site keeps in its localStorage
-     * under the asked key once it is there, or with why not (back, timeout).
-     * The window starts from a site with nothing stored, so what it reads is
-     * the account just signed in.
-     */
-    private fun onLoginRequest(from: WebPage, json: String) {
-        scope.launch(Dispatchers.Main) {
-            fun refuse(id: String, why: String) = from.deliver(SetupPages.loginResultScript(id, false, error = why))
-            if (_promptPage.value !== from || signIn != null) return@launch refuse(SetupPages.loginId(json), "Окно входа уже открыто")
-            val request = try {
-                SetupPages.parseLogin(json)
-            } catch (e: IllegalArgumentException) {
-                return@launch refuse(SetupPages.loginId(json), e.message.orEmpty())
-            }
-            val origin = SetupPages.httpsOrigin(request.url) ?: return@launch refuse(request.id, "Окно входа открывает только https-сайт")
-            val saved = _prompt.value ?: return@launch refuse(request.id, "Настройка закрыта")
-            WebPage.forgetSite(origin)
-            val window = WebPage(request.url, scripts = true, userAgent = WebPage.SIGN_IN_USER_AGENT)
-            val run = SignIn(request, origin, window, from, saved.reason)
-            signIn = run
-            _promptPage.value = window
-            _prompt.update { it?.copy(nested = true, reason = request.title, error = "", busy = false) }
-            log(LogLevel.Info, "Окно входа: ${request.title}")
-            run.job = scope.launch { watchSignIn(run) }
-        }
-    }
-
-    /** Reads the asked localStorage key while the window is on the site it was opened for, until the site has put a sign-in there. */
-    private suspend fun watchSignIn(run: SignIn) {
-        val read = "(function(){try{var v=localStorage.getItem(${JSONObject.quote(run.request.storageKey)});return v===null?'':'v:'+v}catch(e){return ''}})()"
-        val deadline = System.currentTimeMillis() + SIGN_IN_TIMEOUT_MS
-        while (signIn === run && !run.window.closed) {
-            if (System.currentTimeMillis() > deadline) return endSignIn(run, null, "Время на вход вышло")
-            if (SetupPages.isOn(run.origin, run.window.url)) {
-                val stored = try {
-                    run.window.evaluate(read, SIGN_IN_POLL_TIMEOUT_MS)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    "" // the page is not up yet, or is changing: ask again
-                }
-                if (stored.startsWith("v:") && stored.length > 2) return endSignIn(run, stored.substring(2), "")
-            }
-            delay(SIGN_IN_POLL_MS)
-        }
-    }
-
-    /** Closes the sign-in window, brings the setup page back and settles its promise: [value] if the site had a sign-in, else [error]. */
-    private fun endSignIn(run: SignIn, value: String?, error: String) {
-        if (signIn !== run) return
-        signIn = null
-        run.job?.cancel()
-        scope.launch(Dispatchers.Main) {
-            _promptPage.value = run.under
-            run.window.close()
-            _prompt.update { it?.copy(nested = false, reason = run.reason, error = "") }
-            log(if (value != null) LogLevel.Success else LogLevel.Info, if (value != null) "Вход выполнен: ${run.request.title}" else "Вход не выполнен: $error")
-            run.under.deliver(
-                if (value != null) SetupPages.loginResultScript(run.request.id, true, value)
-                else SetupPages.loginResultScript(run.request.id, false, error = error),
-            )
         }
     }
 
@@ -837,24 +748,25 @@ class AndroidConnectionService(
     }
 
     override fun dismissPrompt() {
-        // "Back" in a sign-in window goes back to the page; only the page itself is put off.
-        signIn?.let { endSignIn(it, null, "Вход отменён"); return }
         if (_prompt.value?.own == false) promptSnoozedUntil = System.currentTimeMillis() + PROMPT_SNOOZE_MS
         promptSolved = false
         Mobile.cancelPrompt()
         clearPrompt()
     }
 
+    /** Closes whichever kind of page the prompt showed. */
+    private fun closePage(page: BrowserPage?) {
+        when (page) {
+            is WebStack -> page.close()
+            is WebPage -> page.close()
+            else -> Unit
+        }
+    }
+
     private fun clearPrompt() {
         promptUrl = null
-        signIn?.let { run ->
-            signIn = null
-            run.job?.cancel()
-            run.window.close()
-            run.under.close()
-        }
         _prompt.value = null
-        (_promptPage.value as? WebPage)?.close()
+        closePage(_promptPage.value)
         _promptPage.value = null
         CoreService.cancelPrompt(context)
     }
@@ -931,10 +843,6 @@ class AndroidConnectionService(
         private const val CONNECT_TIMEOUT_MS = 30_000L
         private const val NETWORK_WAIT_MS = 5_000L
         private const val SETTLE_MS = 1500L
-        /** A sign-in window waits this long for the person, looks at the site this often, and gives a look this long. */
-        private const val SIGN_IN_TIMEOUT_MS = 10 * 60_000L
-        private const val SIGN_IN_POLL_MS = 700L
-        private const val SIGN_IN_POLL_TIMEOUT_MS = 4_000L
         private const val MAX_LOG_LINES = 5000
         private const val PROMPT_SNOOZE_MS = 10 * 60_000L
         private val IP = Regex("""^[0-9a-fA-F:.]{3,45}$""")
