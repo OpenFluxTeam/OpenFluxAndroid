@@ -69,7 +69,11 @@ class AndroidScriptRepository(context: Context) :
                 val report = report(js, sig, officialKey)?.takeIf { it.isValid() } ?: return@runCatching
                 val name = report["name"]?.jsonPrimitive?.contentOrNull ?: return@runCatching
                 val shippedVersion = report["version"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                val installed = byId(name) ?: return@runCatching
+                val installed = byId(name)
+                if (installed == null) {
+                    install(js, sig, officialKey, ScriptSource.Bundled, "bundled:$file", now = 0L)
+                    return@runCatching
+                }
                 if (installed.source != ScriptSource.Bundled) return@runCatching
                 if (Mobile.compareScriptVersions(shippedVersion, installed.version) <= 0) return@runCatching
                 val wasEnabled = installed.enabled
