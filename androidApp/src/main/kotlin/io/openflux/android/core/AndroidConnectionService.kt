@@ -215,7 +215,7 @@ class AndroidConnectionService(
         if (current.useAccountSessions) {
             // The library reads its store once, when given the path.
             runCatching {
-                CookieStoreSeeder.seed(cookieStore, profile, accounts.sessions.value) { "${it.type.cliName} ${it.value}" }
+                CookieStoreSeeder.seed(cookieStore, profile, accounts.sessions.value, key = { "${it.type.cliName} ${it.value}" }, scripts = { id -> scripts?.byId(id) })
                 Mobile.setCookieStorePath(cookieStore.path)
             }.onFailure { log(LogLevel.Warning, "Вход в аккаунт не подставлен: ${it.message}") }
         }
