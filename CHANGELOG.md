@@ -5,6 +5,30 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.10.0] - 2026-10-22 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.15.0 / node-v1.8.0. A node made or updated by this version runs the new script host: update the app and the nodes
+together when you use JS transports.
+
+### Added
+
+- **JS transports get their sign-in.** A transport says which account it needs (Yandex, Mail.ru, MAX) and which cookies; the
+  app gives it only those, from the sign-in saved in Settings → Сервисы, and tells you when the transport asks to sign in.
+- **«Простая кнопка подключения»** in Settings → Внешний вид: the plain ring on Home instead of the Moon and the Sun.
+
+### Changed
+
+- **The connect switch spends less battery.** Its animation runs at 30 frames a second instead of the screen's rate, the
+  space behind the scene is gone (it lies on the page), and its shaders work only where something shows.
+- **The transports OpenFlux ships are signed by the OpenFluxTeam key**; those installed earlier from upstream's key stay
+  first-party and update to ours.
+
+### Fixed
+
+- **Importing a third-party JS transport from a file.** It was refused at once (checked against OpenFlux's key, with nowhere to
+  enter the author's); now the author's key can be entered right there, and a valid signature by another author asks whether
+  to add the transport.
+
 ## [3.9.6] - 2026-10-18 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.14.5 / node-v1.7.3.
