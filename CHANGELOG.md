@@ -14,7 +14,11 @@ All notable changes to OpenFluxAndroid. Format loosely follows
   says so on Home and in its profile, and «Создать ноду» leads to the same choice.
 - **A script's own wizard before any connection exists** (`Transport.setup`) and the **sign-in windows** its page can open
   (`window.openfluxLogin`): the MAX wizard signs both accounts in, no tokens to paste.
-- MAX (`oneme-webrtc` 3.3.2) ships as a signed `.flux` package, the only form a node's installer accepts.
+- MAX (`oneme-webrtc` 3.8.2) ships as a signed `.flux` package, the only form a node's installer accepts.
+- **MAX carries 0.24–0.29 MB/s, not 0.01.** One TURN allocation moves about 10 KB/s and a user may hold about twenty, so the
+  tunnel rides 39 data channels of one call: the node lends its own call credentials for the lanes beyond the twentieth, and
+  one shared queue deals the packets out by credit, so nothing arrives out of order. Measured on the phone over HTTPS,
+  delivered bytes.
 
 ### Changed
 
@@ -28,6 +32,14 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 - A sign-in window opened by a script's wizard starts signed out: the node's account was taken for the one the client had
   just signed in with.
 - The screens of a node without a server were closed by the navigator as screens of a forgotten server.
+- **A node stopped taking clients after about 14 hours** (core: control frames never wait on a carrier that takes nothing).
+  A Direct link nobody dials kept queueing pings until the queue was full; the node's receive path then waited on it for good.
+  Control frames now go through a queue of their own that never blocks, and a carrier that takes nothing for 3 s drops the
+  packet instead of holding the sender.
+- **Browser and Telegram lost the first segments of a connection over MAX** (core: packets from the device honour the
+  carrier's packet size). The TUN runs at MTU 1400 and the MAX carrier moves 1200; a segment sized for 1400 was neither cut
+  nor answered with «fragmentation needed». TCP from the device is now cut to what the carrier moves and the MSS of its SYNs
+  is lowered.
 
 ## [3.9.6] - 2026-10-18 (OpenFluxTeam/OpenFluxAndroid)
 
