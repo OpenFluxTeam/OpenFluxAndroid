@@ -5,6 +5,17 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.10.1] - 2026-10-22 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.15.0 / node-v1.8.0 (unchanged).
+
+### Added
+
+- **«Анимации» in Settings → Внешний вид.** Off, nothing moves by itself: the switch stands still in its state (the Moon,
+  the burning crust, the Sun), status dots do not breathe, a busy bar is still, and Home shows when the connection started
+  («с 14:05») instead of a ticking time and live speeds. Transitions between screens follow the system's «Remove
+  animations».
+
 ## [3.10.0] - 2026-10-22 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.15.0 / node-v1.8.0. A node made or updated by this version runs the new script host: update the app and the nodes
