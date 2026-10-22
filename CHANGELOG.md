@@ -15,6 +15,14 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 - **A script's own wizard before any connection exists** (`Transport.setup`) and the **sign-in windows** its page can open
   (`window.openfluxLogin`): the MAX wizard signs both accounts in, no tokens to paste.
 - MAX (`oneme-webrtc` 3.8.2) ships as a signed `.flux` package, the only form a node's installer accepts.
+- **VK Teams and MTS-Link calls as carriers**, from trader52's `vkteams` and `mtslink-webrtc` (a WebRTC data channel in a VK
+  Teams call, in an MTS-Link meeting): both ship as signed `.flux` packages with a setup wizard that checks the call or the
+  meeting and hands the settings to the client and the node. `vkteams` joins as a guest or as a signed-in account: with an
+  account the wizard can create the call, and an end can join a call that is closed to guests.
+- **A sign-in window can hand a script the cookies of the site** (`window.openfluxLogin` with
+  `capture: {cookies: true, signedIn: {fetch: "/path"}}`), not only one localStorage key: the window asks the site's own
+  «who am I» path every two seconds and, once it answers JSON, gives the script the site's whole session (cookies the page
+  cannot read included). VK Teams signs in this way.
 - **MAX carries 0.24–0.29 MB/s, not 0.01.** One TURN allocation moves about 10 KB/s and a user may hold about twenty, so the
   tunnel rides 39 data channels of one call: the node lends its own call credentials for the lanes beyond the twentieth, and
   one shared queue deals the packets out by credit, so nothing arrives out of order. Measured on the phone over HTTPS,
