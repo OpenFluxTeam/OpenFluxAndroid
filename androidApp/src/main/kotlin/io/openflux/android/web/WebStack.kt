@@ -34,7 +34,8 @@ import org.json.JSONObject
  * script's own page - the connection's setup request, a node's setup wizard - shows a [WebStack] and gets this.
  *
  * The window starts from a site with nothing stored ([WebPage.forgetSite]), so what it reads is the account just
- * signed in, reads only the one key the page asked for and only while the window is on the site it was opened for.
+ * signed in, reads only what the page asked for (one localStorage key, or the site's cookies once it answers as signed
+ * in) and only while the window is on the site it was opened for.
  */
 @Stable
 class WebStack private constructor() : BrowserPage {
@@ -91,7 +92,10 @@ class WebStack private constructor() : BrowserPage {
             }
             val origin = SetupPages.httpsOrigin(request.url) ?: return@launch refuse(request.id, "Окно входа открывает только https-сайт")
             WebPage.forgetSite(origin)
-            val window = WebPage(request.url, scripts = true, userAgent = WebPage.SIGN_IN_USER_AGENT, clearStorage = listOf(request.storageKey))
+            val window = WebPage(
+                request.url, scripts = true, userAgent = WebPage.SIGN_IN_USER_AGENT,
+                clearStorage = if (request.storageKey.isEmpty()) emptyList() else listOf(request.storageKey),
+            )
             val run = SignIn(request, origin, window)
             signIn = run
             signInTitle = request.title
@@ -100,23 +104,37 @@ class WebStack private constructor() : BrowserPage {
         }
     }
 
-    /** Reads the asked localStorage key while the window is on the site it was opened for, until the site has put a sign-in there. */
+    /**
+     * While the window is on the site it was opened for, asks it whether someone has signed in: for a localStorage
+     * request that is the asked key being there, for a cookie request the site's own "who am I" path answering
+     * JSON (then the window's cookies go back with it, see [SetupPages.cookieCapture]).
+     */
     private suspend fun watch(run: SignIn) {
-        val read = "(function(){try{var v=localStorage.getItem(${JSONObject.quote(run.request.storageKey)});return v===null?'':'v:'+v}catch(e){return ''}})()"
+        val cookies = run.request.signedInPath.isNotEmpty()
+        val read = if (cookies) SetupPages.signedInProbe(run.request.signedInPath)
+        else "(function(){try{var v=localStorage.getItem(${JSONObject.quote(run.request.storageKey)});return v===null?'':'v:'+v}catch(e){return ''}})()"
         val deadline = System.currentTimeMillis() + SIGN_IN_TIMEOUT_MS
         while (signIn === run && !run.window.closed) {
             if (System.currentTimeMillis() > deadline) return end(run, null, "Время на вход вышло")
             if (SetupPages.isOn(run.origin, run.window.url)) {
                 val stored = try {
-                    run.window.evaluate(read, SIGN_IN_POLL_TIMEOUT_MS)
+                    run.window.evaluate(read, if (cookies) SIGN_IN_PROBE_TIMEOUT_MS else SIGN_IN_POLL_TIMEOUT_MS)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     "" // the page is not up yet, or is changing: ask again
                 }
-                if (stored.startsWith("v:") && stored.length > 2) return end(run, stored.substring(2), "")
+                if (stored.startsWith("v:") && stored.length > 2) {
+                    val value = if (cookies) {
+                        SetupPages.cookieCapture(run.window.cookieHeader(run.origin + "/"), WebPage.SIGN_IN_USER_AGENT, stored.substring(2))
+                    } else {
+                        stored.substring(2)
+                    }
+                    return end(run, value, "")
+                }
             }
-            delay(SIGN_IN_POLL_MS)
+            // A cookie site is asked over the network each time: not as often as a key in the page's own storage.
+            delay(if (cookies) SIGN_IN_COOKIE_POLL_MS else SIGN_IN_POLL_MS)
         }
     }
 
@@ -150,6 +168,8 @@ class WebStack private constructor() : BrowserPage {
         private const val SIGN_IN_TIMEOUT_MS = 10 * 60_000L
         private const val SIGN_IN_POLL_MS = 700L
         private const val SIGN_IN_POLL_TIMEOUT_MS = 4_000L
+        private const val SIGN_IN_COOKIE_POLL_MS = 2_000L
+        private const val SIGN_IN_PROBE_TIMEOUT_MS = 10_000L
 
         /** The script's own server page (an address on 127.0.0.1) that [onSubmit] answers. */
         fun own(url: String, onSubmit: (String) -> Unit): WebStack = WebStack().also { s ->
