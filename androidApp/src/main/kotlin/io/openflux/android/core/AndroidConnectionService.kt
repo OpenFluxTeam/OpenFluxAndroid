@@ -120,6 +120,8 @@ class AndroidConnectionService(
     }
 
     @Volatile private var run: Run? = null
+    /** When a network change last restarted the connection (see [onNetworkChanged]). */
+    @Volatile private var lastNetworkRestart = 0L
     @Volatile private var service: CoreService? = null
     /** A run waiting for its service to come up. */
     @Volatile private var pending: Run? = null
@@ -346,11 +348,15 @@ class AndroidConnectionService(
      */
     private fun onNetworkChanged(current: Run) {
         if (run !== current || current.stopping) return
+        // Never a loop: a restart for a network change at most every NETWORK_RESTART_GAP_MS.
+        val now = System.currentTimeMillis()
+        if (now - lastNetworkRestart < NETWORK_RESTART_GAP_MS) return
         current.networkSwitch?.cancel()
         current.networkSwitch = scope.launch {
             delay(NETWORK_SETTLE_MS)
             lifecycle.withLock {
                 if (run !== current || current.stopping) return@withLock
+                lastNetworkRestart = System.currentTimeMillis()
                 log(LogLevel.Info, "Сеть телефона сменилась: переподключаюсь через новую")
                 stop(current, restart = true)
                 begin(current.profile, current.settings.mode)
@@ -849,6 +855,8 @@ class AndroidConnectionService(
         private const val NETWORK_WAIT_MS = 5_000L
         /** How long a new network must hold before the connection moves to it: a switch often flaps once. */
         private const val NETWORK_SETTLE_MS = 1_500L
+        /** The least time between two restarts for a network change. */
+        private const val NETWORK_RESTART_GAP_MS = 30_000L
         private const val SETTLE_MS = 1500L
         private const val MAX_LOG_LINES = 5000
         private const val CAPTCHA_SNOOZE_MS = 10 * 60_000L
