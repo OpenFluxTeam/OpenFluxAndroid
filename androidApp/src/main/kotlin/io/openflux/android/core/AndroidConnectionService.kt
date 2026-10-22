@@ -113,6 +113,10 @@ class AndroidConnectionService(
         val pushed = java.util.concurrent.ConcurrentHashMap<AccountKind, Map<String, String>>()
         /** The networks the carriers are bound to (bonding), null when none. */
         @Volatile var networks: NetworkBinding? = null
+        /** Watches the phone's own network: when it changes, the run starts again on the new one. */
+        @Volatile var networkWatch: DefaultNetworkWatch? = null
+        /** The restart waiting for the new network to settle. */
+        @Volatile var networkSwitch: Job? = null
     }
 
     @Volatile private var run: Run? = null
@@ -259,6 +263,8 @@ class AndroidConnectionService(
             it.close()
             current.networks = null
         }
+        current.networkWatch?.close()
+        current.networkWatch = null
         drainLogs(current)
         if (run === current) run = null
         if (pending === current) pending = null
@@ -322,12 +328,32 @@ class AndroidConnectionService(
 
     private fun launch(current: Run, host: CoreService) {
         if (current.kind == Kind.Exit) host.holdWakeLock()
+        current.networkWatch = runCatching { DefaultNetworkWatch(context) { onNetworkChanged(current) } }
+            .onFailure { log(LogLevel.Warning, "Смена сети не отслеживается: ${it.message}") }.getOrNull()
         current.jobs += scope.launch { monitor(current, host) }
         current.jobs += scope.launch {
             try {
                 execute(current, host)
             } catch (e: Exception) {
                 if (isActive) failRun(current, e.message ?: "Ядро не запустилось")
+            }
+        }
+    }
+
+    /**
+     * The phone moved to another network (Wi-Fi off and mobile data on, or back): the carriers' sockets were on the
+     * old one and hang there, so the run starts again on the new one once it has settled for [NETWORK_SETTLE_MS].
+     */
+    private fun onNetworkChanged(current: Run) {
+        if (run !== current || current.stopping) return
+        current.networkSwitch?.cancel()
+        current.networkSwitch = scope.launch {
+            delay(NETWORK_SETTLE_MS)
+            lifecycle.withLock {
+                if (run !== current || current.stopping) return@withLock
+                log(LogLevel.Info, "Сеть телефона сменилась: переподключаюсь через новую")
+                stop(current, restart = true)
+                begin(current.profile, current.settings.mode)
             }
         }
     }
@@ -821,6 +847,8 @@ class AndroidConnectionService(
         private const val POLL_MS = 1000L
         private const val CONNECT_TIMEOUT_MS = 30_000L
         private const val NETWORK_WAIT_MS = 5_000L
+        /** How long a new network must hold before the connection moves to it: a switch often flaps once. */
+        private const val NETWORK_SETTLE_MS = 1_500L
         private const val SETTLE_MS = 1500L
         private const val MAX_LOG_LINES = 5000
         private const val CAPTCHA_SNOOZE_MS = 10 * 60_000L

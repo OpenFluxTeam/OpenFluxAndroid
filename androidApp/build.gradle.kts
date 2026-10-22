@@ -102,4 +102,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.zxing.core)
     implementation(libs.zxing.android)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlin.testJunit)
 }
