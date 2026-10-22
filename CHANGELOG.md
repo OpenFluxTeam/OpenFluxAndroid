@@ -5,6 +5,21 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.10.3] - 2026-10-23 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.15.1 / node-v1.8.1. Replaces 3.10.2, withdrawn: in VPN mode it reconnected every few seconds.
+
+### Fixed
+
+- **VPN mode reconnected every few seconds (3.10.2).** The network watch took OpenFlux's own VPN coming up for a change of
+  network and restarted the connection, which brought the VPN down and up again. It now follows only the real networks
+  (Wi-Fi, then Ethernet, then mobile data) and restarts at most every 30 seconds. Wi-Fi off and on still moves the
+  connection to the new network.
+
+### Changed
+
+- **The Клиент / Выходная нода switch is under the button** on Home, not above it.
+
 ## [3.10.2] - 2026-10-22 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.15.1 / node-v1.8.1: update the nodes too.
