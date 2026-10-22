@@ -23,6 +23,10 @@ All notable changes to OpenFluxAndroid. Format loosely follows
   `capture: {cookies: true, signedIn: {fetch: "/path"}}`), not only one localStorage key: the window asks the site's own
   «who am I» path every two seconds and, once it answers JSON, gives the script the site's whole session (cookies the page
   cannot read included). VK Teams signs in this way.
+- **A sign-in window can hand a script the page the person opened** (`window.openfluxLogin` with
+  `capture: {page: {match, hint}}`): the person makes a document or a board on the site itself and the window returns the
+  address they ended on, by itself once the address fits `match`, or at «Это она» whatever it is. The setup wizards of the
+  other transports use it to «create on the site» without the app knowing each site's private API.
 - **MAX carries 0.24–0.29 MB/s, not 0.01.** One TURN allocation moves about 10 KB/s and a user may hold about twenty, so the
   tunnel rides 39 data channels of one call: the node lends its own call credentials for the lanes beyond the twentieth, and
   one shared queue deals the packets out by credit, so nothing arrives out of order. Measured on the phone over HTTPS,

@@ -35,7 +35,9 @@ import org.json.JSONObject
  *
  * The window starts from a site with nothing stored ([WebPage.forgetSite]), so what it reads is the account just
  * signed in, reads only what the page asked for (one localStorage key, or the site's cookies once it answers as signed
- * in) and only while the window is on the site it was opened for.
+ * in) and only while the window is on the site it was opened for. A window that was asked for a page reads nothing of
+ * the site at all but its address (and, on the site it was opened for, the page's title): it ends when the address
+ * matches the pattern the page gave, or when the person says "this is the page".
  */
 @Stable
 class WebStack private constructor() : BrowserPage {
@@ -49,6 +51,14 @@ class WebStack private constructor() : BrowserPage {
 
     /** The title of the sign-in window while one is open; null while the script's own page is shown. */
     var signInTitle by mutableStateOf<String?>(null)
+        private set
+
+    /** The line the sign-in window's bar shows instead of the usual one (the page asked for a page and said what to open); null for the usual. */
+    var signInHint by mutableStateOf<String?>(null)
+        private set
+
+    /** Whether the open sign-in window can be told "this is the page": its request was for a page. */
+    var signInCanTake by mutableStateOf(false)
         private set
 
     @Volatile var closed = false
@@ -99,8 +109,10 @@ class WebStack private constructor() : BrowserPage {
             val run = SignIn(request, origin, window)
             signIn = run
             signInTitle = request.title
+            signInHint = request.pageHint.ifEmpty { null }
+            signInCanTake = request.capturesPage
             topPage = window
-            run.job = scope.launch { watch(run) }
+            run.job = scope.launch { if (request.capturesPage) watchPage(run) else watch(run) }
         }
     }
 
@@ -138,6 +150,52 @@ class WebStack private constructor() : BrowserPage {
         }
     }
 
+    /**
+     * A window that was asked for a page: waits until its address has matched the request's pattern twice running (a
+     * redirect or a single-page app passes through addresses on its way), then hands the address back.
+     */
+    private suspend fun watchPage(run: SignIn) {
+        val regex = run.request.pageRegex
+        val deadline = System.currentTimeMillis() + SIGN_IN_TIMEOUT_MS
+        var last = ""
+        var steady = 0
+        while (signIn === run && !run.window.closed) {
+            if (System.currentTimeMillis() > deadline) return end(run, null, "Время на вход вышло")
+            val url = run.window.url
+            if (regex != null && SetupPages.httpsOrigin(url) != null && regex.containsMatchIn(url)) {
+                steady = if (url == last) steady + 1 else 1
+                last = url
+                if (steady >= PAGE_STEADY_POLLS) return end(run, SetupPages.pageCapture(url, pageTitle(run, url)), "")
+            } else {
+                last = ""
+                steady = 0
+            }
+            delay(SIGN_IN_POLL_MS)
+        }
+    }
+
+    /** "Это она": the page the window is on goes back to the script's page, whether or not its address matches (https only). */
+    fun take() {
+        val run = signIn ?: return
+        if (!run.request.capturesPage) return
+        val url = run.window.url
+        if (SetupPages.httpsOrigin(url) == null) return
+        scope.launch { end(run, SetupPages.pageCapture(url, pageTitle(run, url)), "") }
+    }
+
+    /** The title of the page the window shows, only while it is on the site it was opened for; "" otherwise or when the page does not answer. */
+    private suspend fun pageTitle(run: SignIn, url: String): String {
+        if (!SetupPages.isOn(run.origin, url)) return ""
+        return try {
+            val v = run.window.evaluate("(function(){try{return 'v:'+document.title}catch(e){return ''}})()", SIGN_IN_POLL_TIMEOUT_MS)
+            if (v.startsWith("v:")) v.substring(2).take(MAX_PAGE_TITLE) else ""
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
     /** Closes the sign-in window, shows the script's page again and settles its promise: [value] if the site had a sign-in, else [error]. */
     private fun end(run: SignIn, value: String?, error: String) {
         if (signIn !== run) return
@@ -146,6 +204,8 @@ class WebStack private constructor() : BrowserPage {
         scope.launch {
             topPage = base
             signInTitle = null
+            signInHint = null
+            signInCanTake = false
             run.window.close()
             base.deliver(
                 if (value != null) SetupPages.loginResultScript(run.request.id, true, value)
@@ -170,6 +230,8 @@ class WebStack private constructor() : BrowserPage {
         private const val SIGN_IN_POLL_TIMEOUT_MS = 4_000L
         private const val SIGN_IN_COOKIE_POLL_MS = 2_000L
         private const val SIGN_IN_PROBE_TIMEOUT_MS = 10_000L
+        private const val PAGE_STEADY_POLLS = 2
+        private const val MAX_PAGE_TITLE = 200
 
         /** The script's own server page (an address on 127.0.0.1) that [onSubmit] answers. */
         fun own(url: String, onSubmit: (String) -> Unit): WebStack = WebStack().also { s ->
@@ -183,9 +245,9 @@ class WebStack private constructor() : BrowserPage {
     }
 }
 
-/** The strip above a sign-in window: where the person is, and the way back to the script's page. */
+/** The strip above a sign-in window: where the person is, what to do there, "this is the page" when a page was asked for, and the way back to the script's page. */
 @Composable
-internal fun SignInBar(title: String, onBack: () -> Unit, onReload: () -> Unit) {
+internal fun SignInBar(title: String, hint: String?, canTake: Boolean, onTake: () -> Unit, onBack: () -> Unit, onReload: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = AppTheme.spacing.l, vertical = AppTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
@@ -193,8 +255,10 @@ internal fun SignInBar(title: String, onBack: () -> Unit, onReload: () -> Unit) 
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = AppTheme.type.body, color = AppTheme.colors.text)
-            Text("Войдите в аккаунт: окно закроется само.", style = AppTheme.type.bodySmall, color = AppTheme.colors.textSecondary)
+            val line = hint ?: if (canTake) "Откройте нужную страницу: окно закроется само." else "Войдите в аккаунт: окно закроется само."
+            Text(line, style = AppTheme.type.bodySmall, color = AppTheme.colors.textSecondary)
         }
+        if (canTake) TextAction("Это она", onTake)
         TextAction("Заново", onReload, color = AppTheme.colors.textSecondary)
         TextAction("Назад", onBack, color = AppTheme.colors.textSecondary)
     }

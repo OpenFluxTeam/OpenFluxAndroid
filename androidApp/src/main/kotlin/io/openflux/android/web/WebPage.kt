@@ -147,8 +147,9 @@ class WebPage(
                 }
             }
 
-            // Addresses a page changes without loading (a fragment) count too.
+            // Addresses a page changes without loading (a fragment, a single-page app's route) count too.
             override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
+                this@WebPage.url = url
                 if (history.lastOrNull() != url) history.add(url)
             }
 
@@ -307,7 +308,7 @@ object WebBrowserViews : BrowserViews {
             }
             // A script's own page; while it asks for a sign-in window that window is what is shown, with its way back.
             is WebStack -> Column(modifier) {
-                page.signInTitle?.let { SignInBar(it, page::back, page::reload) }
+                page.signInTitle?.let { SignInBar(it, page.signInHint, page.signInCanTake, page::take, page::back, page::reload) }
                 val web = page.top
                 key(web) {
                     AndroidView(factory = { context -> web.view(context) }, modifier = Modifier.weight(1f).fillMaxWidth())
