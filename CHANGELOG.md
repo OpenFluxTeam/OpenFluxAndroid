@@ -5,6 +5,17 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.10.2] - 2026-10-22 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.15.1 / node-v1.8.1: update the nodes too.
+
+### Fixed
+
+- **The connection follows the phone when Wi-Fi goes off (or comes back).** It stayed dead on mobile data until it was turned
+  off and on; now it starts again on the new network by itself. Together with node-v1.8.1 (the node takes the phone's new
+  connection from the old, half-open one), traffic is back in about 25 seconds.
+- **No incoming traffic after a node stood idle for hours (cups).** Fixed on the node (node-v1.8.1).
+
 ## [3.10.1] - 2026-10-22 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.15.0 / node-v1.8.0 (unchanged).
