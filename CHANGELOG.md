@@ -7,6 +7,11 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ### Added
 
+- **Sign in to a site that has no "who am I" path.** A setup wizard's sign-in window can now take the site's whole
+  session by the address the window ends on, or «Это она» — not only by a path that answers JSON when signed in
+  (`capture: {cookies: true, page: {match, hint}}`, the cookie half of the page capture). PRUFFME (`pruffme` 1.2.0)
+  uses it: «Войти в PRUFFME» signs the account in through the window and the wizard checks the session (it will create
+  a board from it next); the shared kit grew an optional account step for any transport that needs one.
 - **A node without SSH.** «Серверы → Нода без SSH» asks where the node will live: a command to run on a machine of your own
   (the app makes the node's key itself and hands over a script that downloads the pinned installer, checks its SHA-256 and
   installs the node, or only changes the transports of one that is already there), another device with OpenFlux (the node's

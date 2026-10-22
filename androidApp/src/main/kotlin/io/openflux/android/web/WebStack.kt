@@ -165,7 +165,7 @@ class WebStack private constructor() : BrowserPage {
             if (regex != null && SetupPages.httpsOrigin(url) != null && regex.containsMatchIn(url)) {
                 steady = if (url == last) steady + 1 else 1
                 last = url
-                if (steady >= PAGE_STEADY_POLLS) return end(run, SetupPages.pageCapture(url, pageTitle(run, url)), "")
+                if (steady >= PAGE_STEADY_POLLS) return end(run, captureFor(run, url), "")
             } else {
                 last = ""
                 steady = 0
@@ -180,8 +180,19 @@ class WebStack private constructor() : BrowserPage {
         if (!run.request.capturesPage) return
         val url = run.window.url
         if (SetupPages.httpsOrigin(url) == null) return
-        scope.launch { end(run, SetupPages.pageCapture(url, pageTitle(run, url)), "") }
+        scope.launch { end(run, captureFor(run, url), "") }
     }
+
+    /**
+     * What a page-completing window hands back: the site's whole session ([SetupPages.cookieCapture], no probe) when
+     * the request asked for cookies, else the address of the page ([SetupPages.pageCapture]). The cookies are the ones
+     * the site the window was opened for would get, whatever address the window ended on.
+     */
+    private suspend fun captureFor(run: SignIn, url: String): String =
+        if (run.request.cookies)
+            SetupPages.cookieCapture(run.window.cookieHeader(run.origin + "/"), WebPage.SIGN_IN_USER_AGENT, "")
+        else
+            SetupPages.pageCapture(url, pageTitle(run, url))
 
     /** The title of the page the window shows, only while it is on the site it was opened for; "" otherwise or when the page does not answer. */
     private suspend fun pageTitle(run: SignIn, url: String): String {
