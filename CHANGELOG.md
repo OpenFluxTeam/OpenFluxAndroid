@@ -5,6 +5,23 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.11.0] - 2026-10-24 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.15.1 / node-v1.8.1 (unchanged).
+
+### Changed
+
+- **The exit node's tab looks like the client's.** On Home's «Выходная нода» (and «Это устройство») the same Moon-and-Sun switch,
+  or the plain ring, starts and stops the node; its state and running time are under it; «Что раздавать» is a row like the
+  connection's, opening a list to choose from. A running node shows its QR, link and folded details.
+
+### Performance
+
+- **Home's scene is lighter on the GPU and the battery.** The links, orbits and screens are drawn as ready triangles instead
+  of shapes cut again every frame, the Sun's surface and corona are simpler, and the scene moves at 24 frames a second
+  instead of 30. It looks the same. (On the desktop the same work halved its GPU load.)
+- **Less memory.** The scene no longer allocates for every frame and its pictures are half the size.
+
 ## [3.10.3] - 2026-10-23 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.15.1 / node-v1.8.1. Replaces 3.10.2, withdrawn: in VPN mode it reconnected every few seconds.
