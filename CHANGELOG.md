@@ -5,6 +5,23 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.12.2] - 2026-10-24 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.15.1 / node-v1.8.1 (unchanged).
+
+### Fixed
+
+- **The journal shows its lines again.** The filter switch grew to the whole remaining height, leaving the list
+  below it zero pixels tall; the same could happen on any screen with a segmented control followed by content.
+
+### Changed
+
+- **Large system fonts have room.** Fields show up to four lines of error, segmented labels and buttons wrap,
+  and rows, chips, banners and the bottom bar give text more lines; on a phone banner actions move under the text.
+- **Clearer Russian.** «Вход в Яндекс» instead of «Вход Яндекс», «вход истёк», «Нод на нём: N», «Детализация
+  журнала ядра», «Свои документы и ссылки», «Создать в Облаке Mail.ru», «Нет строк по фильтру» and the messages
+  of a missing app id or an unusable document. The connection time uses a comma as the decimal separator.
+
 ## [3.12.0] - 2026-10-24 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.15.1 / node-v1.8.1 (unchanged).
