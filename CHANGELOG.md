@@ -5,6 +5,19 @@ All notable changes to OpenFluxAndroid. Format loosely follows
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-10-24 (OpenFluxTeam/OpenFluxAndroid)
+
+Core 0.15.1 / node-v1.8.1 (unchanged).
+
+### Changed
+
+- **The connect button is the OpenFlux mark.** Off it is a round power button; connecting, its ring lights up; connected,
+  its core fills and eight rays reach out to four monitors and four phones, as on the logo. It moves only when the state
+  changes and stands still otherwise, so it costs the battery nothing while you look at it.
+- **The Moon and the Sun are a choice:** Settings → Внешний вид → «Кнопка подключения»: Логотип (the default) or Луна и
+  Солнце. The «Анимации» and «Простая кнопка подключения» switches are gone.
+- **The time connected reads «с 14:05»** instead of a ticking timer; status dots no longer pulse.
+
 ## [3.11.0] - 2026-10-24 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.15.1 / node-v1.8.1 (unchanged).
