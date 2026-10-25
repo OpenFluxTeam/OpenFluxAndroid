@@ -36,6 +36,7 @@ import java.security.SecureRandom
 class AndroidPlatformServices(
     private val context: Context,
     private val bridge: ActivityBridge,
+    private val appCatalog: AndroidAppCatalog,
 ) : PlatformServices {
     private val random = SecureRandom()
     private val clipboard get() = context.getSystemService(ClipboardManager::class.java)
@@ -104,6 +105,8 @@ class AndroidPlatformServices(
     override val systemProxySupported = false
     /** The VPN: the whole phone through the node. */
     override val fullTunnelSupported = true
+    override val splitTunnelSupported = true
+    override suspend fun installedApps(): List<io.openflux.desktop.service.InstalledApp> = appCatalog.installed()
     override val elevated = true
 
     override fun restartElevated() = false

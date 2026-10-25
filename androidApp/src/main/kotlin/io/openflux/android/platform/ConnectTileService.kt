@@ -1,5 +1,6 @@
 package io.openflux.android.platform
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.drawable.Icon
@@ -92,6 +93,7 @@ class ConnectTileService : TileService() {
         connectChosen(container)
     }
 
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun openApp(connectAfter: Boolean) {
         val intent = Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)

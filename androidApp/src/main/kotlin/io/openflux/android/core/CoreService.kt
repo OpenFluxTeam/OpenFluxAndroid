@@ -57,17 +57,37 @@ class CoreService : VpnService() {
     /**
      * The TUN interface: all IPv4 through it, DNS to [dns] (answered by the
      * packet tunnel), this app itself outside, since the core's own traffic
-     * must not loop back into the tunnel.
+     * must not loop back into the tunnel. [split] narrows the route to an
+     * allowlist or leaves a disallowlist out; Android accepts only one list.
      */
-    fun establish(mtu: Int, dns: String): ParcelFileDescriptor? {
+    fun establish(mtu: Int, dns: String, split: SplitTunnelPlan): ParcelFileDescriptor? {
         val builder = Builder()
             .setSession("OpenFlux")
             .setMtu(mtu)
             .addAddress("10.10.10.2", 24)
             .addRoute("0.0.0.0", 0)
             .addDnsServer(dns)
-            .addDisallowedApplication(packageName)
             .setConfigureIntent(openAppIntent(this))
+        if (split.allowed.isNotEmpty()) {
+            var added = 0
+            split.allowed.forEach { pkg ->
+                try {
+                    builder.addAllowedApplication(pkg)
+                    added++
+                } catch (_: Exception) {
+                    // Uninstalled since the check: an allowlist can safely skip it.
+                }
+            }
+            check(added > 0) { "Выбранные приложения больше не установлены — VPN не запущен" }
+        } else {
+            split.disallowed.forEach { pkg ->
+                try {
+                    builder.addDisallowedApplication(pkg)
+                } catch (_: Exception) {
+                    // Uninstalled since the check: nothing to exclude.
+                }
+            }
+        }
         if (Build.VERSION.SDK_INT >= 29) builder.setBlocking(true)
         return builder.establish()
     }

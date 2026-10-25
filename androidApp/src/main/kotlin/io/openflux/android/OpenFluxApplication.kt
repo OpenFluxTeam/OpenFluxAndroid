@@ -16,6 +16,7 @@ import io.openflux.android.core.AndroidScriptRepository
 import io.openflux.android.core.MobileCoreLinks
 import io.openflux.android.node.AndroidNodeWizard
 import io.openflux.android.node.AndroidPhpTransport
+import io.openflux.android.platform.AndroidAppCatalog
 import io.openflux.android.platform.AndroidPlatformServices
 import io.openflux.desktop.data.FileProfileRepository
 import io.openflux.desktop.data.FileSettingsRepository
@@ -59,7 +60,8 @@ class OpenFluxApplication : Application() {
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         )
         val scripts = AndroidScriptRepository(this)
-        connection = AndroidConnectionService(this, settings, bridge, accounts, scripts)
+        val appCatalog = AndroidAppCatalog(this)
+        connection = AndroidConnectionService(this, settings, bridge, accounts, scripts, appCatalog)
         val phpHosting = PhpHostingService(AndroidPhpTransport(), clock = System::currentTimeMillis)
         signIn = io.openflux.desktop.data.RedirectSignIn(
             BuildConfig.CLIENT_ID, "io.openflux.client:/oauth2redirect", open = ::openSignInPage,
@@ -70,7 +72,7 @@ class OpenFluxApplication : Application() {
             scripts = scripts,
             // Connecting a profile made by the "без сервера" wizard first asks its node on the hosting to run.
             connection = NodeKeepingConnection(connection, phpHosting, CoroutineScope(SupervisorJob() + Dispatchers.Default)),
-            platform = AndroidPlatformServices(this, bridge),
+            platform = AndroidPlatformServices(this, bridge, appCatalog),
             shareCodec = CoreShareLinkCodec(MobileCoreLinks),
             nodeWizard = AndroidNodeWizard(accounts),
             accounts = accounts,

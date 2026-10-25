@@ -21,6 +21,9 @@ val clientId = ((findProperty("openflux.clientId") as String?) ?: System.getenv(
 /** The core the gomobile library was built from, written by scripts/build-android-core.sh. */
 val coreVersion = file("libs/openflux-core.version").takeIf { it.isFile }?.readText()?.trim() ?: "встроенное"
 
+/** -PdevBuild=true builds a separate edition that installs beside the release app. */
+val devBuild = (findProperty("devBuild") as String?)?.toBoolean() == true
+
 kotlin {
     jvmToolchain(17)
 }
@@ -31,11 +34,12 @@ android {
 
     defaultConfig {
         // Its own id: installs beside the Java app (io.openflux.app).
-        applicationId = "io.openflux.client"
+        applicationId = if (devBuild) "io.openflux.client.dev" else "io.openflux.client"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = appVersionCode
-        versionName = appVersion
+        versionName = if (devBuild) "$appVersion-dev" else appVersion
+        manifestPlaceholders["appLabel"] = if (devBuild) "OpenFlux Dev" else "OpenFlux"
         buildConfigField("String", "CORE_VERSION", "\"$coreVersion\"")
         buildConfigField("String", "APP_ID", "\"$appId\"")
         buildConfigField("String", "CLIENT_ID", "\"$clientId\"")

@@ -14,6 +14,7 @@ import android.webkit.CookieManager
 import androidx.core.content.ContextCompat
 import io.openflux.android.ActivityBridge
 import io.openflux.android.openFlux
+import io.openflux.android.platform.AndroidAppCatalog
 import io.openflux.android.web.WebPage
 import io.openflux.bridge.mobile.Mobile
 import io.openflux.desktop.model.AppSettings
@@ -27,6 +28,7 @@ import io.openflux.desktop.model.LogLevel
 import io.openflux.desktop.model.LogLine
 import io.openflux.desktop.model.NetworkKind
 import io.openflux.desktop.model.Profile
+import io.openflux.desktop.model.SplitTunnelMode
 import io.openflux.desktop.model.TrafficStats
 import io.openflux.desktop.model.TransportType
 import io.openflux.desktop.model.YandexDisk
@@ -72,6 +74,8 @@ class AndroidConnectionService(
     private val accounts: Accounts,
     /** Installed script transports, to resolve a SCRIPT carrier's file + pinned key. */
     private val scripts: AndroidScriptRepository? = null,
+    /** Installed apps, to turn split-tunnel package names into VPN app filters. */
+    private val apps: AndroidAppCatalog,
 ) : ConnectionService {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     /** connect/disconnect/failures one at a time. */
@@ -99,7 +103,12 @@ class AndroidConnectionService(
     /** How the core runs for a connection. */
     private enum class Kind { Vpn, Proxy, Exit }
 
-    private class Run(val profile: Profile, val settings: AppSettings, val kind: Kind) {
+    private class Run(
+        val profile: Profile,
+        val settings: AppSettings,
+        val kind: Kind,
+        val split: SplitTunnelPlan,
+    ) {
         val sent = AtomicLong()
         val received = AtomicLong()
         val jobs = mutableListOf<Job>()
@@ -213,6 +222,11 @@ class AndroidConnectionService(
             fail(profile, it)
             return
         }
+        val split = if (kind == Kind.Vpn) splitPlan(current) else SplitTunnelPlan(current.splitTunnelMode)
+        split.problem?.let {
+            fail(profile, it)
+            return
+        }
         if (kind == Kind.Vpn && !bridge.prepareVpn(context)) {
             fail(profile, "Android не разрешил OpenFlux включить VPN")
             return
@@ -225,11 +239,18 @@ class AndroidConnectionService(
                 Mobile.setCookieStorePath(cookieStore.path)
             }.onFailure { log(LogLevel.Warning, "Вход в аккаунт не подставлен: ${it.message}") }
         }
-        val next = Run(profile, current, kind)
+        val next = Run(profile, current, kind, split)
         run = next
         _socksAddress.value = if (kind == Kind.Proxy) proxyAddress(current) else null
         _state.value = ConnectionState.Connecting(profile, current.mode, System.currentTimeMillis())
         log(LogLevel.Info, "Запуск ядра: ${profile.name} (${kind.label})")
+        if (kind == Kind.Vpn && split.mode != SplitTunnelMode.Off) {
+            val label = if (split.mode == SplitTunnelMode.Include) "только выбранные" else "все, кроме выбранных"
+            log(LogLevel.Info, "Раздельное туннелирование: $label")
+            if (split.missing.isNotEmpty()) {
+                log(LogLevel.Warning, "Пропущены недоступные приложения: ${split.missing.joinToString(", ")}")
+            }
+        }
         val running = service
         if (running != null) {
             launch(next, running)
@@ -237,6 +258,20 @@ class AndroidConnectionService(
             pending = next
             ContextCompat.startForegroundService(context, Intent(context, CoreService::class.java))
         }
+    }
+
+    private suspend fun splitPlan(settings: AppSettings): SplitTunnelPlan {
+        if (settings.splitTunnelMode == SplitTunnelMode.Off) {
+            return SplitTunnelPlan(settings.splitTunnelMode, disallowed = listOf(context.packageName))
+        }
+        val selected = settings.splitTunnelPackages
+            .asSequence()
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .distinct()
+            .toList()
+        val installed = selected.filter { apps.isInstalled(it) }.toSet()
+        return resolveSplitTunnel(settings.splitTunnelMode, selected, installed, context.packageName)
     }
 
     private suspend fun stop(current: Run, restart: Boolean) {
@@ -470,7 +505,7 @@ class AndroidConnectionService(
         if (current.stopping) return
         // Read before the VPN takes the default route: the network's own resolver.
         val dns = networkDns()
-        val tun = runCatching { host.establish(MTU, dns) }.getOrElse {
+        val tun = runCatching { host.establish(MTU, dns, current.split) }.getOrElse {
             failRun(current, "VPN-интерфейс не создан: ${it.message}")
             return
         } ?: run {
