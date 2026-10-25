@@ -1,6 +1,6 @@
 [submodule "OpenFlux"]
 	path = OpenFlux
-	url = https://github.com/meepo161/OpenFlux.git
+	url = https://github.com/OpenFluxTeam/OpenFlux.git
 [submodule "shared"]
 	path = shared
-	url = https://github.com/meepo161/OpenFluxClientShared.git
+	url = https://github.com/OpenFluxTeam/OpenFluxClientShared.git
