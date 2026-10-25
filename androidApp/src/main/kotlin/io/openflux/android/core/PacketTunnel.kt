@@ -61,7 +61,7 @@ internal class PacketTunnel(
                     isIpv4UdpDns(packet) -> runCatching { dnsWorkers.execute { forwardDns(packet) } }
                     isIpv4Tcp(packet) || isIpv4Udp(packet) -> {
                         val error = Mobile.send(packet)
-                        if (error.isNullOrEmpty()) sent.addAndGet(packet.size.toLong())
+                        if (error.isNullOrEmpty()) sent.addAndGet(packet.size.toLong()) else reportSendError(error)
                     }
                 }
             }
@@ -69,6 +69,16 @@ internal class PacketTunnel(
             if (active) onFailure("Чтение VPN-интерфейса: ${e.message}")
         } catch (_: InterruptedException) {
         }
+    }
+
+    private var lastSendProblem = 0L
+
+    /** The core refused a packet of the device: said once in a while, so a tunnel that takes nothing is not silent. */
+    private fun reportSendError(error: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastSendProblem < SEND_PROBLEM_EVERY_MS) return
+        lastSendProblem = now
+        onProblem("Пакеты не уходят в туннель: $error")
     }
 
     private fun writeIncoming() {
@@ -147,6 +157,7 @@ internal class PacketTunnel(
     }
 
     private companion object {
+        const val SEND_PROBLEM_EVERY_MS = 10_000L
         const val WRITE_RETRIES = 8
 
         fun isCongestion(e: IOException): Boolean {

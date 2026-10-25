@@ -21,6 +21,7 @@ import io.openflux.desktop.model.AppSettings
 import io.openflux.desktop.model.TransportPrompt
 import io.openflux.desktop.model.ConnectionMode
 import io.openflux.desktop.model.ConnectionNarrative
+import io.openflux.desktop.model.CarrierLink
 import io.openflux.desktop.model.ConnectionState
 import io.openflux.desktop.model.CoreConfig
 import io.openflux.desktop.model.ExitAddress
@@ -453,7 +454,7 @@ class AndroidConnectionService(
         }
         val tunnel = PacketTunnel(
             tun, dns, current.sent, current.received,
-            onProblem = { current.notice = it },
+            onProblem = { current.notice = it; log(LogLevel.Warning, it) },
             onFailure = { failRun(current, it) },
         )
         if (current.stopping) {
@@ -580,6 +581,19 @@ class AndroidConnectionService(
 
     // ---- exit address ----
 
+    override fun carrierLinks(): List<CarrierLink> = runCatching {
+        val all = org.json.JSONArray(Mobile.carrierLinks().orEmpty().ifEmpty { "[]" })
+        (0 until all.length()).map { i ->
+            all.getJSONObject(i).let { CarrierLink(it.getString("name"), it.optString("type"), it.optBoolean("live"), it.optBoolean("pinned")) }
+        }
+    }.getOrDefault(emptyList())
+
+    override fun pinCarrier(name: String?): Boolean {
+        val ok = Mobile.setPinnedCarrier(name.orEmpty())
+        if (ok) log(LogLevel.Info, if (name == null) "Транспорт: выбор автоматический" else "Транспорт закреплён: $name")
+        return ok
+    }
+
     override fun refreshExitAddress() {
         val checked = run ?: return
         if (checked.kind == Kind.Exit) return
@@ -610,7 +624,10 @@ class AndroidConnectionService(
         scope.launch {
             val result = runCatching {
                 val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress(LOOPBACK, checked.settings.socksPort))
-                val connection = URL("https://api.ipify.org").openConnection(proxy) as HttpURLConnection
+                // 2ip.io answers a bare IP in the body to a plain client (curl) and an HTML page to a browser, so the
+                // User-Agent must look like curl or the body is not an address.
+                val connection = URL(IP_SERVICE).openConnection(proxy) as HttpURLConnection
+                connection.setRequestProperty("User-Agent", IP_SERVICE_UA)
                 connection.connectTimeout = 20_000
                 connection.readTimeout = 30_000
                 val body = connection.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }.trim()
@@ -850,6 +867,9 @@ class AndroidConnectionService(
         private const val SETTLE_MS = 1500L
         private const val MAX_LOG_LINES = 5000
         private const val PROMPT_SNOOZE_MS = 10 * 60_000L
+        // Where the proxy-mode IP check asks for the exit's address, and the plain-client User-Agent it needs.
+        private const val IP_SERVICE = "https://2ip.io"
+        private const val IP_SERVICE_UA = "curl/8.7.1"
         private val IP = Regex("""^[0-9a-fA-F:.]{3,45}$""")
         /** Lines the app's side of the core writes; the rest is the transports' debug log. */
         private val APP_TAGS = listOf("[ANDROID]", "[NODE]", "[ERROR]", "[SUCCESS]", "[WARN")
