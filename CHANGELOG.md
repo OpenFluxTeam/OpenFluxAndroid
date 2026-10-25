@@ -3,6 +3,16 @@
 All notable changes to OpenFluxAndroid. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- **FluxFast — собственный скоростной протокол (эксперимент).** Новый транспорт ядра на UDP вместо TCP-потока
+  `direct`: без head-of-line blocking и TCP-поверх-TCP, фрагментация записей на датаграммы < 1280 байт,
+  роуминг по connection id при смене сети, 0-RTT старт. Включается транспортом «FluxFast» в профиле Session
+  (адрес ноды host:port), нода слушает его на UDP-порту `exitDirectPort`. Дизайн и планы замеров —
+  [docs/FLUXFAST.md](docs/FLUXFAST.md). Скорость пока не замерена: это гипотеза, проверяемая стендом.
+
 ## [3.13.0] - 2026-10-25 (OpenFluxTeam/OpenFluxAndroid)
 
 Core 0.15.1 / node-v1.8.1 (unchanged).

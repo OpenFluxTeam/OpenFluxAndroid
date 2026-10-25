@@ -36,7 +36,7 @@ internal object CoreSpecs {
         directPort: Int,
         resolveScript: (String) -> ScriptCarrier? = { null },
     ): String {
-        val specs = profile.sessionSpecs().filterNot { exit && it.type == TransportType.DIRECT }
+        val specs = profile.sessionSpecs().filterNot { exit && it.type.dialAddress }
         val transports = buildJsonArray {
             for (spec in specs) add(spec(spec.name, spec.type, spec.value, spec.uid, spec.priority, spec.scriptId, spec.settings, resolveScript, spec.network.cli))
             // The exit listens for direct only when the profile has it.
@@ -47,6 +47,18 @@ internal object CoreSpecs {
                     put("type", "direct")
                     put("url", "")
                     put("priority", direct.priority)
+                    put("params", buildJsonObject { put("listen", "0.0.0.0:$directPort") })
+                })
+            }
+            // FluxFast listens on the same port number over UDP: TCP and UDP
+            // ports are separate spaces, so one number names the node fully.
+            val fluxfast = profile.carriers.firstOrNull { it.type == TransportType.FLUXFAST }
+            if (exit && fluxfast != null) {
+                add(buildJsonObject {
+                    put("name", "fluxfast")
+                    put("type", "fluxfast")
+                    put("url", "")
+                    put("priority", fluxfast.priority)
                     put("params", buildJsonObject { put("listen", "0.0.0.0:$directPort") })
                 })
             }
@@ -75,11 +87,11 @@ internal object CoreSpecs {
         put("name", if (type == TransportType.SCRIPT) name.replace(TransportType.SCRIPT.cliName, "script") else name)
         if (network.isNotEmpty()) put("network", network)
         put("type", type.cliName)
-        put("url", if (type == TransportType.DIRECT || type == TransportType.ONEME) "" else value)
+        put("url", if (type.dialAddress || type == TransportType.ONEME) "" else value)
         put("priority", priority)
         put("params", buildJsonObject {
             when (type) {
-                TransportType.DIRECT -> put("dial", value)
+                TransportType.DIRECT, TransportType.FLUXFAST -> put("dial", value)
                 TransportType.ONEME -> {
                     put("token", value)
                     put("uid", uid)
