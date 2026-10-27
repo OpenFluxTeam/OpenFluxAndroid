@@ -859,7 +859,11 @@ class AndroidConnectionService(
 
     companion object {
         private const val LOOPBACK = "127.0.0.1"
-        private const val MTU = 1400
+        // Matches core's directCarrierMTU (16000): TCP is already sized to the real carrier by
+        // tunnel.ClampDeviceSyn's MSS clamp (tunnelMTU(trans)-40), so a high TUN MTU just means far
+        // fewer packets per byte on direct (~11x), and is a no-op on a doc carrier where the clamp
+        // still holds ~1460. UDP/oversize gets PacketTooLargeError -> ICMP frag-needed (PMTUD).
+        private const val MTU = 16000
         private const val FALLBACK_DNS = "1.1.1.1"
         private const val POLL_MS = 1000L
         private const val CONNECT_TIMEOUT_MS = 30_000L
