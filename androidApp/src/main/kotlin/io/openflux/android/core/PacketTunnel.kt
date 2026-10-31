@@ -58,8 +58,7 @@ internal class PacketTunnel(
                 }
                 val packet = buffer.copyOf(length)
                 when {
-                    isIpv4UdpDns(packet) -> runCatching { dnsWorkers.execute { forwardDns(packet) } }
-                    isIpv4Tcp(packet) || isIpv4Udp(packet) -> {
+                    isIpv4Tcp(packet) || isIpv4Udp(packet) || isIpv4UdpDns(packet) -> {
                         val error = Mobile.send(packet)
                         if (error.isNullOrEmpty()) sent.addAndGet(packet.size.toLong())
                     }
